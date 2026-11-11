@@ -6,6 +6,7 @@ import pytest
 
 from app.llm.base import LLMProvider, RespostaInvalidaError, extrair_json
 from app.llm.factory import ConfiguracaoLLMError, criar_provider
+from app.llm.fallback import FallbackProvider, TodosProvedoresFalharamError
 from app.llm.mock import MockProvider
 from app.models.schemas import Opiniao
 
@@ -52,3 +53,38 @@ def test_falha_apos_esgotar_tentativas():
 def test_provedor_invalido():
     with pytest.raises(ConfiguracaoLLMError):
         criar_provider("inexistente")
+
+
+class ProviderQueFalha(LLMProvider):
+    nome = "quebrado"
+
+    def __init__(self):
+        super().__init__(modelo="x")
+
+    async def _completar(self, sistema, mensagens):
+        raise ConnectionError("servidor fora do ar")
+
+
+def test_reserva_assume_quando_principal_falha():
+    cadeia = FallbackProvider([ProviderQueFalha(), ProviderFalso([VALIDA])])
+    opiniao, origem = asyncio.run(cadeia.gerar_com_origem("s", [], Opiniao))
+    assert opiniao.interesse == 7
+    assert origem == "falso/falso"
+
+
+def test_principal_responde_sem_chamar_reserva():
+    reserva = ProviderFalso([VALIDA])
+    cadeia = FallbackProvider([ProviderFalso([VALIDA]), reserva])
+    asyncio.run(cadeia.gerar("s", [], Opiniao))
+    assert reserva.chamadas == 0
+
+
+def test_mock_no_fim_da_cadeia():
+    cadeia = FallbackProvider([ProviderQueFalha(), ProviderQueFalha(), MockProvider(atraso_segundos=0)])
+    _, origem = asyncio.run(cadeia.gerar_com_origem("s", [], Opiniao))
+    assert origem.startswith("mock")
+
+
+def test_erro_quando_todos_falham():
+    with pytest.raises(TodosProvedoresFalharamError):
+        asyncio.run(FallbackProvider([ProviderQueFalha(), ProviderQueFalha()]).gerar("s", [], Opiniao))

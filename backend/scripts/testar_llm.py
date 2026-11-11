@@ -1,14 +1,15 @@
 """Teste manual da camada de LLM: uma ou todas as personas avaliam um negócio de exemplo.
 
 Uso (dentro da pasta backend/, com o ambiente virtual ativado):
-    python -m scripts.testar_llm                      # usa o provedor do .env
-    python -m scripts.testar_llm --provider groq      # força um provedor
+    python -m scripts.testar_llm                      # cadeia do .env: principal → reserva → mock
+    python -m scripts.testar_llm --provider groq      # só um provedor, sem reserva
     python -m scripts.testar_llm --todas              # as 5 personas em paralelo
     python -m scripts.testar_llm --provider groq --listar-modelos   # nomes de modelos da sua chave
 """
 
 import argparse
 import asyncio
+import logging
 import sys
 import time
 
@@ -37,12 +38,12 @@ async def avaliar(provider, persona_id: str) -> None:
     mensagens = [{"role": "user", "content": formatar_negocio(NEGOCIO_EXEMPLO) + "\n\nDê sua avaliação."}]
     inicio = time.perf_counter()
     try:
-        opiniao = await provider.gerar(persona.prompt_sistema(), mensagens, Opiniao)
+        opiniao, origem = await provider.gerar_com_origem(persona.prompt_sistema(), mensagens, Opiniao)
     except Exception as erro:  # mostra o erro desta persona sem derrubar as outras
         print(f"\n=== {persona.nome} — ERRO ===\n{type(erro).__name__}: {str(erro)[:500]}")
         return
     duracao = time.perf_counter() - inicio
-    print(f"\n=== {persona.nome} ({duracao:.1f}s) ===")
+    print(f"\n=== {persona.nome} ({duracao:.1f}s) — respondido por {origem} ===")
     print(opiniao.model_dump_json(indent=2))
 
 
@@ -100,11 +101,13 @@ async def main() -> None:
         print(f"Erro de configuração: {erro}")
         return
 
-    print(f"Provedor: {provider.nome} | Modelo: {provider.modelo}")
+    print(f"Provedor: {provider.nome} | Cadeia: {provider.modelo}")
     ids = list(PERSONAS) if args.todas else [args.persona]
     await asyncio.gather(*(avaliar(provider, pid) for pid in ids))
 
 
 if __name__ == "__main__":
     sys.stdout.reconfigure(encoding="utf-8")  # acentos corretos no terminal do Windows
+    sys.stderr.reconfigure(encoding="utf-8")
+    logging.basicConfig(level=logging.WARNING, format="  [aviso] %(message)s")
     asyncio.run(main())

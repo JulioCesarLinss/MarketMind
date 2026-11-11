@@ -88,6 +88,17 @@ class LLMProvider(ABC):
             f"{self.nome}/{self.modelo} não devolveu JSON válido para {schema.__name__}: {ultimo_erro}"
         )
 
+    async def gerar_com_origem(
+        self,
+        sistema: str,
+        mensagens: Mensagens,
+        schema: type[T],
+        tentativas: int = 2,
+    ) -> tuple[T, str]:
+        """Igual a `gerar`, mas também diz quem respondeu (ex.: "groq/openai/gpt-oss-20b")."""
+        resultado = await self.gerar(sistema, mensagens, schema, tentativas)
+        return resultado, f"{self.nome}/{self.modelo}"
+
     @abstractmethod
     async def _completar(self, sistema: str, mensagens: Mensagens) -> str:
         """Faz a chamada ao provedor e devolve o texto bruto da resposta."""

@@ -15,8 +15,9 @@ class OpenAICompatProvider(LLMProvider):
         super().__init__(modelo)
         self.nome = nome
         # max_retries: ao bater no limite por minuto do plano grátis (erro 429), o cliente
-        # espera o tempo indicado pelo provedor e tenta de novo, em vez de falhar.
-        self.client = AsyncOpenAI(base_url=base_url, api_key=api_key, max_retries=6)
+        # espera o tempo indicado pelo provedor e tenta de novo. Se ainda falhar, a
+        # reserva (Gemini) assume — por isso não vale insistir demais aqui.
+        self.client = AsyncOpenAI(base_url=base_url, api_key=api_key, max_retries=3)
 
     async def _completar(self, sistema: str, mensagens: Mensagens) -> str:
         resposta = await self.client.chat.completions.create(

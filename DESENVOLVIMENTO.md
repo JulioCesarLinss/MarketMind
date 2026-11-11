@@ -115,14 +115,28 @@ O backend fala com a IA **apenas através da classe `LLMProvider`** (`backend/ap
 | Uso | Groq (padrão) | Gemini (reserva) |
 |---|---|---|
 | Personas | `openai/gpt-oss-20b` | `gemini-3.5-flash-lite` |
-| Analista | `openai/gpt-oss-120b` | um `gemini-*-flash` |
-| Tempo por persona | ~2 s | ~4 s |
-| Limite grátis observado | **8.000 tokens/minuto** — duas simulações seguidas estouram | não medido ainda |
+| Analista | `openai/gpt-oss-120b` | `gemini-3.5-flash` |
+| Tempo por persona | ~2 s | ~2–4 s |
+| Limite grátis observado | **8.000 tokens/minuto** — duas simulações seguidas estouram | `gemini-3.5-flash` deu erro 503 (sobrecarga) em um teste |
 
 - Modelos Groq marcados "Enterprise" (ex.: Llama) **não** funcionam no plano grátis. Whisper, Orpheus e Guard não são modelos de conversa.
-- Ao bater no limite (erro 429), o cliente espera e tenta de novo sozinho (`max_retries=6`) — a simulação fica mais lenta, mas não falha.
-- Uma persona no Gemini Flash-Lite soltou palavras sem sentido no início da fala; o Groq teve qualidade mais estável.
+- Uma persona no Gemini Flash-Lite soltou palavras sem sentido no início da fala uma vez; no reteste respondeu normalmente.
 - Para listar modelos disponíveis na sua chave: `python -m scripts.testar_llm --provider groq --listar-modelos`.
+
+### 4.1.0 Reserva automática (fallback)
+
+`criar_provider()` monta uma **cadeia**: cada chamada tenta o primeiro; se falhar, passa ao próximo.
+
+```
+Groq (principal) ──falhou?──► Gemini (reserva) ──falhou?──► mock (respostas gravadas)
+```
+
+- **Por que reserva e não "em conjunto":** todas as personas de uma simulação devem vir do mesmo modelo, senão não dá para saber se uma nota diferente veio do perfil ou do modelo. A reserva só entra em falha.
+- **O que conta como falha:** limite estourado (429) após novas tentativas, servidor sobrecarregado (503), falta de conexão, modelo inexistente, resposta em formato inválido.
+- **Novas tentativas antes de desistir:** Groq tenta 3 vezes (`max_retries=3`); Gemini tenta 3 vezes em 429/500/503, esperando 2 s e 4 s.
+- **Rastreio:** `gerar_com_origem()` devolve a resposta **e quem respondeu** (ex.: `gemini/gemini-3.5-flash-lite`). O orquestrador deve salvar isso em cada mensagem, para o relatório indicar se a reserva foi usada.
+- **Configuração** (`.env`): `LLM_FALLBACK_PROVIDER`, `LLM_FALLBACK_MODEL_PERSONAS`, `LLM_FALLBACK_MODEL_ANALISTA`, `LLM_MOCK_NO_FIM`. Com `--provider X` no script, testa só aquele provedor, sem reserva.
+- **Testado:** com um modelo Groq inexistente, o Gemini assumiu automaticamente em ~2 s.
 
 ### 4.1.1 Como testar (passo a passo)
 
@@ -264,7 +278,7 @@ Atenções:
 - [ ] Orquestrador: rodada 1 e rodada 2 em paralelo, histórico salvo
 - [ ] `POST /simulacoes` e `GET /simulacoes/{id}/stream` (SSE)
 - [ ] Feed do debate no frontend
-- [ ] Testar Groq e Gemini com chaves reais e escolher o padrão
+- [x] Testar Groq e Gemini com chaves reais e escolher o padrão (Groq principal, Gemini reserva)
 
 ### Dia 3 — Resultado
 - [ ] Agente analista + schema `Relatorio`
@@ -303,7 +317,7 @@ Atenções:
 | 2026-11-11 | Sem LangChain/CrewAI | Orquestração simples em Python puro é suficiente e mais fácil de depurar |
 
 ### Pendentes
-- [ ] **Provedor de LLM padrão**: Groq ou Gemini (ambos grátis) — testar qualidade das personas e limites diários de cada um.
+- [x] **Provedor de LLM**: Groq principal, Gemini reserva automática, mock como último recurso.
 - [ ] Dados dos concorrentes entram no prompt das personas ou só no relatório?
 - [ ] Comparação de cenários (ex.: dois preços ou duas ofertas lado a lado) — fazer se sobrar tempo no Dia 3/4?
 - [ ] Responsáveis por cada frente.
@@ -316,5 +330,6 @@ Atenções:
 
 | Data | Autor | Commit | Mudança |
 |---|---|---|---|
+| 2026-11-11 | Júlio | `feat: reserva Groq → Gemini → mock` | `FallbackProvider`, `gerar_com_origem` (registra quem respondeu), novas tentativas no Gemini em 429/503, variáveis `LLM_FALLBACK_*` no `.env.example`, 4 testes novos |
 | 2026-11-11 | Júlio | `feat: camada de LLM` | Interface `LLMProvider`, provedores mock/Groq/Gemini/Ollama, 5 personas, schema `Opiniao`, script `testar_llm`, testes; `.gitignore` reforçado para repo público |
 | 2026-11-11 | Júlio | `docs: estrutura inicial` | Estrutura de pastas, README, DESENVOLVIMENTO.md, `.gitignore`, `.env.example`, resumo da proposta |
