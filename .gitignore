@@ -1,0 +1,27 @@
+# Ambiente / segredos
+.env
+.env.local
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Banco local
+*.db
+*.sqlite3
+
+# Node / frontend
+node_modules/
+dist/
+.vite/
+
+# Editores / SO
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
