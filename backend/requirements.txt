@@ -1,0 +1,10 @@
+# Núcleo
+pydantic>=2.7
+python-dotenv>=1.0
+
+# Provedores de LLM
+openai>=1.40          # cliente no formato OpenAI — usado para Groq e Ollama
+google-genai>=1.0     # SDK oficial do Gemini (Google AI Studio)
+
+# Testes
+pytest>=8.0

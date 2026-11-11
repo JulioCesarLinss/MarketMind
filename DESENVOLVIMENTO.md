@@ -84,25 +84,75 @@ frontend (Vercel)                      backend (Render)
 
 ## 4. Como funciona a parte de LLM
 
-### 4.1 Ainda não temos LLM — e tudo bem
+### 4.1 Provedores — um código, vários LLMs
 
-O backend fala com a IA **apenas através de uma interface**, `LLMProvider` (em `backend/app/llm/`). O resto do código não sabe qual provedor está por trás.
+O backend fala com a IA **apenas através da classe `LLMProvider`** (`backend/app/llm/base.py`). O resto do código chama `provider.gerar(prompt, mensagens, Schema)` e recebe um objeto Pydantic já validado, sem saber quem está por trás.
 
-```python
-class LLMProvider(Protocol):
-    async def gerar(self, sistema: str, mensagens: list[dict], schema: type[BaseModel]) -> BaseModel: ...
+```
+                    ┌─────────────────┐
+ orquestrador ────► │   LLMProvider   │  gerar() → valida JSON → tenta de novo se inválido
+                    └────────┬────────┘
+          ┌──────────────────┼──────────────────┐
+          ▼                  ▼                  ▼
+   MockProvider     OpenAICompatProvider   GeminiProvider
+   (demo_data/)     Groq / Ollama          Google AI Studio
 ```
 
-Implementações:
+| `LLM_PROVIDER` | O que é | Chave | Arquivo |
+|---|---|---|---|
+| `mock` | Respostas gravadas em `backend/demo_data/` — **padrão da demo pública** | Não | `llm/mock.py` |
+| `groq` | Nuvem do Groq rodando modelos abertos (Llama etc.), API no formato OpenAI. **Grátis com limite diário** | [console.groq.com/keys](https://console.groq.com/keys) | `llm/openai_compat.py` |
+| `gemini` | Gemini do Google, chave gerada no **Google AI Studio**. Grátis com limite diário | [aistudio.google.com/apikey](https://aistudio.google.com/apikey) | `llm/gemini.py` |
+| `ollama` | Modelo rodando **no seu PC** (não serve para a URL pública) | Não | `llm/openai_compat.py` |
 
-| Provedor | Quando usar | Status |
+- Groq e Ollama usam o mesmo código (formato OpenAI); muda só o endereço.
+- O prompt de sistema recebe automaticamente a lista de campos da resposta; o Pydantic valida e, se vier inválido, há **uma nova tentativa**. (Com o JSON Schema bruto no prompt, o modelo às vezes devolvia o próprio schema — por isso usamos lista de campos.)
+- Planos grátis podem usar os dados enviados para treino: **não usar dados reais de empreendedores** com chaves grátis.
+- Na URL pública, manter `mock` como padrão para a cota grátis não esgotar com visitantes.
+
+**Modelos configurados e resultados dos testes (2026-11-11):**
+
+| Uso | Groq (padrão) | Gemini (reserva) |
 |---|---|---|
-| `MockProvider` | Desenvolvimento, testes e **demo pública sem custo** | Primeiro a ser feito |
-| `AnthropicProvider` / `OpenAIProvider` / `GeminiProvider` | Quando houver chave de API | Só um será implementado (decisão pendente) |
+| Personas | `openai/gpt-oss-20b` | `gemini-3.5-flash-lite` |
+| Analista | `openai/gpt-oss-120b` | um `gemini-*-flash` |
+| Tempo por persona | ~2 s | ~4 s |
+| Limite grátis observado | **8.000 tokens/minuto** — duas simulações seguidas estouram | não medido ainda |
 
-A escolha é feita no `.env`: `LLM_PROVIDER=mock`. Trocar de provedor = mudar uma variável e preencher a chave.
+- Modelos Groq marcados "Enterprise" (ex.: Llama) **não** funcionam no plano grátis. Whisper, Orpheus e Guard não são modelos de conversa.
+- Ao bater no limite (erro 429), o cliente espera e tenta de novo sozinho (`max_retries=6`) — a simulação fica mais lenta, mas não falha.
+- Uma persona no Gemini Flash-Lite soltou palavras sem sentido no início da fala; o Groq teve qualidade mais estável.
+- Para listar modelos disponíveis na sua chave: `python -m scripts.testar_llm --provider groq --listar-modelos`.
 
-**O `MockProvider`** devolve respostas plausíveis a partir de `backend/demo_data/` (JSON por persona e rodada), com pequeno atraso para simular a "digitação" no feed. Quando tivermos um LLM real, gravamos uma boa simulação e ela passa a ser o conteúdo do modo demo — plano B garantido para a apresentação.
+### 4.1.1 Como testar (passo a passo)
+
+```powershell
+# 1. Na raiz do repositório: criar seu .env (já está no .gitignore)
+copy .env.example .env
+
+# 2. Ambiente Python (uma vez)
+cd backend
+py -3.12 -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+
+# 3. Testes automáticos (não precisam de chave)
+pytest
+
+# 4. Teste com o mock (não precisa de chave)
+python -m scripts.testar_llm
+python -m scripts.testar_llm --todas          # as 5 personas em paralelo
+
+# 5. Teste com LLM real: preencha no .env
+#    GROQ_API_KEY=...  e  LLM_MODEL_PERSONAS=<nome do modelo no painel do Groq>
+python -m scripts.testar_llm --provider groq --todas
+#    ou GEMINI_API_KEY=... e um modelo Gemini
+python -m scripts.testar_llm --provider gemini --modelo <nome-do-modelo>
+```
+
+> 🔒 **Repositório público.** Chaves ficam **só** no `.env` local (ignorado pelo Git). Antes de cada commit, rode `git status` e confira que nenhum `.env`, `.db` ou `.log` aparece. Se uma chave vazar, **revogue-a imediatamente** no painel do provedor e gere outra.
+
+**O `MockProvider`** devolve `backend/demo_data/<schema>.json` (ex.: `opiniao.json`) com pequeno atraso para simular a "digitação" no feed. Quando tivermos um LLM real, gravamos uma boa simulação e ela passa a ser o conteúdo do modo demo — plano B garantido para a apresentação.
 
 ### 4.2 Os agentes
 
@@ -209,12 +259,12 @@ Atenções:
 - [ ] Primeiro deploy (Vercel + Render) com "hello world"
 
 ### Dia 2 — Agentes
-- [ ] Interface `LLMProvider` + `MockProvider` + `demo_data/`
+- [x] Interface `LLMProvider` + `MockProvider` + `demo_data/` + adaptadores Groq, Gemini e Ollama + script de teste
 - [ ] Definição das 5 personas e prompts
 - [ ] Orquestrador: rodada 1 e rodada 2 em paralelo, histórico salvo
 - [ ] `POST /simulacoes` e `GET /simulacoes/{id}/stream` (SSE)
 - [ ] Feed do debate no frontend
-- [ ] Escolher provedor de LLM e implementar o adaptador real (se houver chave)
+- [ ] Testar Groq e Gemini com chaves reais e escolher o padrão
 
 ### Dia 3 — Resultado
 - [ ] Agente analista + schema `Relatorio`
@@ -253,7 +303,7 @@ Atenções:
 | 2026-11-11 | Sem LangChain/CrewAI | Orquestração simples em Python puro é suficiente e mais fácil de depurar |
 
 ### Pendentes
-- [ ] **Provedor de LLM** (Anthropic, OpenAI ou Gemini) — depende de créditos/chave disponíveis.
+- [ ] **Provedor de LLM padrão**: Groq ou Gemini (ambos grátis) — testar qualidade das personas e limites diários de cada um.
 - [ ] Dados dos concorrentes entram no prompt das personas ou só no relatório?
 - [ ] Comparação de cenários (ex.: dois preços ou duas ofertas lado a lado) — fazer se sobrar tempo no Dia 3/4?
 - [ ] Responsáveis por cada frente.
@@ -266,4 +316,5 @@ Atenções:
 
 | Data | Autor | Commit | Mudança |
 |---|---|---|---|
+| 2026-11-11 | Júlio | `feat: camada de LLM` | Interface `LLMProvider`, provedores mock/Groq/Gemini/Ollama, 5 personas, schema `Opiniao`, script `testar_llm`, testes; `.gitignore` reforçado para repo público |
 | 2026-11-11 | Júlio | `docs: estrutura inicial` | Estrutura de pastas, README, DESENVOLVIMENTO.md, `.gitignore`, `.env.example`, resumo da proposta |

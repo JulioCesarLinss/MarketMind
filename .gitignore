@@ -1,6 +1,17 @@
-# Ambiente / segredos
+# =========================================================
+# SEGREDOS — o repositório é PÚBLICO. Nada disto vai no push.
+# =========================================================
 .env
-.env.local
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+secrets/
+credentials*.json
+service-account*.json
+*-key.json
 
 # Python
 __pycache__/
@@ -11,9 +22,14 @@ venv/
 .mypy_cache/
 .ruff_cache/
 
-# Banco local
+# Banco local (pode conter dados de usuários)
 *.db
 *.sqlite3
+*.db-journal
+
+# Logs (podem conter prompts/respostas)
+*.log
+logs/
 
 # Node / frontend
 node_modules/
