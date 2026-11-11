@@ -220,6 +220,25 @@ Análise   →  1 chamada: analista recebe todo o histórico
 - **Evitar concordância excessiva:** LLMs tendem a concordar entre si. O prompt instrui a persona a manter suas prioridades e só mudar de opinião diante de argumento concreto; o campo `mudou_de_opiniao` registra mudanças, que viram destaque no relatório.
 - **Custo:** ~11 chamadas por simulação (5 + 5 + 1). Personas podem usar um modelo menor e barato; o analista, um modelo mais capaz.
 
+**Implementação** (`backend/app/services/orquestrador.py`):
+
+| Peça | Arquivo | Função |
+|---|---|---|
+| `Orquestrador.executar(negocio)` | `services/orquestrador.py` | Roda rodada 1 → rodada 2 e devolve `ResultadoSimulacao` |
+| Memória por persona | `Orquestrador.memoria` | Histórico próprio de cada uma: pedido r1, resposta r1, pedido r2 |
+| Textos das rodadas | `agents/debate.py` | Rodada 2 recebe só um **resumo** das falas dos outros (fala, nota, decisão) |
+| Limite de chamadas simultâneas | `LLM_CONCORRENCIA` (padrão 2) | Reduz estouro do limite por minuto |
+| Aviso a cada fala | `ao_publicar` | Hoje imprime no terminal; a API vai usar para o feed ao vivo (SSE) |
+| Formatos | `models/schemas.py` | `MensagemDebate` (fala + persona + rodada + origem) e `ResultadoSimulacao` |
+
+Rodar: `python -m scripts.simular` (ou `--provider mock` para não gastar cota; `--salvar arquivo.json` para salvar).
+
+**Primeira simulação real (Groq, 2026-11-11):**
+- Funcionou de ponta a ponta: na rodada 2 as personas citaram umas às outras pelo nome e **2 de 5 mudaram de opinião** com justificativa.
+- **~14.700 tokens por simulação**, acima do limite de 8.000/minuto do Groq grátis → as últimas falas esperaram 12–29 s. Tempo total: ~46 s.
+- **Problema de qualidade:** todas as falas da rodada 2 começaram com "Concordo com..." e várias notas ficaram em 5. Próximo passo: ajustar prompts para gerar discordância real e notas mais variadas.
+- **Ideia para reduzir tokens:** o `gpt-oss` é um modelo de raciocínio; configurar esforço de raciocínio baixo pode cortar muitos tokens (a testar).
+
 ### 4.5 Linguagem responsável (vale para prompts e interface)
 
 Usar "interesse simulado", "percepção dos agentes", "hipótese a validar". Nunca "chance de sucesso" ou "previsão de vendas". Mostrar aviso de que as opiniões são sintéticas.
@@ -275,7 +294,7 @@ Atenções:
 ### Dia 2 — Agentes
 - [x] Interface `LLMProvider` + `MockProvider` + `demo_data/` + adaptadores Groq, Gemini e Ollama + script de teste
 - [ ] Definição das 5 personas e prompts
-- [ ] Orquestrador: rodada 1 e rodada 2 em paralelo, histórico salvo
+- [x] Orquestrador: rodada 1 e rodada 2 com memória por persona e limite de concorrência (script `simular`) — histórico ainda não vai para o banco
 - [ ] `POST /simulacoes` e `GET /simulacoes/{id}/stream` (SSE)
 - [ ] Feed do debate no frontend
 - [x] Testar Groq e Gemini com chaves reais e escolher o padrão (Groq principal, Gemini reserva)
@@ -330,6 +349,8 @@ Atenções:
 
 | Data | Autor | Commit | Mudança |
 |---|---|---|---|
+| 2026-11-11 | Júlio | `fix: mudança de opinião calculada pelo código` | `mudou_de_posicao()`: mudou a decisão de compra ou a nota variou 2+ pontos — a IA às vezes declarava errado; resumo mostra quais falas usaram a reserva |
+| 2026-11-11 | Júlio | `feat: orquestrador do debate` | `Orquestrador` (2 rodadas, memória por persona, concorrência limitada, aviso por fala), `MensagemDebate`/`ResultadoSimulacao`, contagem de tokens nos provedores, script `simular`, 5 testes novos; 1ª simulação real: ~14,7k tokens, 2 de 5 mudaram de opinião |
 | 2026-11-11 | Júlio | `feat: reserva Groq → Gemini → mock` | `FallbackProvider`, `gerar_com_origem` (registra quem respondeu), novas tentativas no Gemini em 429/503, variáveis `LLM_FALLBACK_*` no `.env.example`, 4 testes novos |
 | 2026-11-11 | Júlio | `feat: camada de LLM` | Interface `LLMProvider`, provedores mock/Groq/Gemini/Ollama, 5 personas, schema `Opiniao`, script `testar_llm`, testes; `.gitignore` reforçado para repo público |
 | 2026-11-11 | Júlio | `docs: estrutura inicial` | Estrutura de pastas, README, DESENVOLVIMENTO.md, `.gitignore`, `.env.example`, resumo da proposta |

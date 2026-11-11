@@ -27,6 +27,8 @@ class Settings:
     llm_fallback_model_analista: str = _env("LLM_FALLBACK_MODEL_ANALISTA")
     # Se tudo falhar, usa as respostas gravadas (demo_data) em vez de dar erro
     llm_mock_no_fim: bool = _env("LLM_MOCK_NO_FIM", "true").lower() in ("1", "true", "sim")
+    # Quantas chamadas à IA ao mesmo tempo (baixo = menos risco de estourar limite por minuto)
+    llm_concorrencia: int = int(_env("LLM_CONCORRENCIA", "2") or 2)
 
     # Chaves
     groq_api_key: str = _env("GROQ_API_KEY")

@@ -67,6 +67,11 @@ class LLMProvider(ABC):
 
     def __init__(self, modelo: str):
         self.modelo = modelo
+        self.tokens_usados = 0  # somado a cada chamada (entrada + saída)
+
+    def total_tokens(self) -> int:
+        """Tokens gastos por este provedor desde que foi criado."""
+        return self.tokens_usados
 
     async def gerar(
         self,

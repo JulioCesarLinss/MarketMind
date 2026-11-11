@@ -25,4 +25,6 @@ class OpenAICompatProvider(LLMProvider):
             messages=[{"role": "system", "content": sistema}, *mensagens],
             response_format={"type": "json_object"},  # garante JSON sintaticamente válido
         )
+        if resposta.usage:
+            self.tokens_usados += resposta.usage.total_tokens
         return resposta.choices[0].message.content or ""

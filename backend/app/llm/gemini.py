@@ -38,6 +38,8 @@ class GeminiProvider(LLMProvider):
                         response_mime_type="application/json",
                     ),
                 )
+                if resposta.usage_metadata and resposta.usage_metadata.total_token_count:
+                    self.tokens_usados += resposta.usage_metadata.total_token_count
                 return resposta.text or ""
             except errors.APIError as erro:
                 ultima = tentativa == TENTATIVAS_HTTP - 1

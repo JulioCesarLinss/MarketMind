@@ -14,23 +14,12 @@ import sys
 import time
 
 from app.agents.contexto import formatar_negocio
+from app.agents.exemplos import NEGOCIO_EXEMPLO
 from app.agents.personas import PERSONAS
 from app.llm import criar_provider
 from app.llm.factory import ConfiguracaoLLMError
 from app.models.schemas import Opiniao
 
-# Negócio fictício só para teste
-NEGOCIO_EXEMPLO = {
-    "tipo": "Cafeteria com delivery",
-    "localizacao": "Bairro residencial de cidade média",
-    "produto": "Café especial e salgados artesanais",
-    "preco": 18.0,
-    "publico": "Adultos que trabalham em casa",
-    "divulgacao": "Instagram e WhatsApp",
-    "concorrentes": [
-        {"nome": "Padaria tradicional do bairro", "preco": 9.0, "observacao": "café comum, entrega rápida"},
-    ],
-}
 
 
 async def avaliar(provider, persona_id: str) -> None:

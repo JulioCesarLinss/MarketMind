@@ -38,6 +38,9 @@ class FallbackProvider(LLMProvider):
                 erros.append(f"{provedor.nome}: {type(erro).__name__}: {str(erro)[:200]}")
         raise TodosProvedoresFalharamError(" | ".join(erros))
 
+    def total_tokens(self) -> int:
+        return sum(p.total_tokens() for p in self.provedores)
+
     async def gerar(self, sistema: str, mensagens: Mensagens, schema: type[T], tentativas: int = 2) -> T:
         resultado, _ = await self.gerar_com_origem(sistema, mensagens, schema, tentativas)
         return resultado
