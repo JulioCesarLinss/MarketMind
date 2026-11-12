@@ -1,0 +1,100 @@
+import type {
+  MensagemDebate,
+  NegocioPayload,
+  PersonaPublica,
+  ResultadoSimulacao,
+  SimulacaoCriada,
+} from '../types'
+
+const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:8000').replace(/\/$/, '')
+
+async function lerErro(resposta: Response): Promise<string> {
+  try {
+    const corpo = await resposta.json()
+
+    if (Array.isArray(corpo.detail)) {
+      return corpo.detail
+        .map((erro: { loc?: string[]; msg?: string }) => {
+          const campo = erro.loc?.at(-1)
+          return `${campo ? `${campo}: ` : ''}${erro.msg || 'valor inválido'}`
+        })
+        .join(' · ')
+    }
+
+    if (typeof corpo.detail === 'string') return corpo.detail
+    if (typeof corpo.message === 'string') return corpo.message
+  } catch {
+    // Se a API não devolver JSON, usa a mensagem genérica abaixo.
+  }
+
+  return `Não foi possível concluir a solicitação (HTTP ${resposta.status}).`
+}
+
+export async function buscarPersonas(): Promise<PersonaPublica[]> {
+  const resposta = await fetch(`${API_URL}/personas`)
+  if (!resposta.ok) throw new Error(await lerErro(resposta))
+  return resposta.json() as Promise<PersonaPublica[]>
+}
+
+export async function criarSimulacao(
+  negocio: NegocioPayload,
+  demo: boolean,
+): Promise<SimulacaoCriada> {
+  const rota = demo ? '/simulacoes?demo=true' : '/simulacoes'
+  const resposta = await fetch(`${API_URL}${rota}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(negocio),
+  })
+
+  if (!resposta.ok) throw new Error(await lerErro(resposta))
+  return resposta.json() as Promise<SimulacaoCriada>
+}
+
+interface EventosFeed {
+  aoReceberMensagem: (mensagem: MensagemDebate) => void
+  aoFinalizar: (resultado: ResultadoSimulacao) => void
+  aoFalhar: (mensagem: string) => void
+  aoReconectar: () => void
+}
+
+export function conectarFeed(id: string, eventos: EventosFeed): EventSource {
+  const fonte = new EventSource(`${API_URL}/simulacoes/${id}/stream`)
+
+  fonte.addEventListener('mensagem', (evento) => {
+    try {
+      const dados = (evento as MessageEvent<string>).data
+      eventos.aoReceberMensagem(JSON.parse(dados) as MensagemDebate)
+    } catch {
+      eventos.aoFalhar('A API enviou uma resposta que não pôde ser lida.')
+      fonte.close()
+    }
+  })
+
+  fonte.addEventListener('fim', (evento) => {
+    try {
+      const dados = (evento as MessageEvent<string>).data
+      eventos.aoFinalizar(JSON.parse(dados) as ResultadoSimulacao)
+    } catch {
+      eventos.aoFalhar('A API terminou a avaliação, mas não foi possível ler o resultado.')
+    }
+    fonte.close()
+  })
+
+  fonte.addEventListener('erro', (evento) => {
+    const dados = (evento as MessageEvent<string>).data
+    eventos.aoFalhar(dados || 'O backend encontrou um erro durante a avaliação.')
+    fonte.close()
+  })
+
+  fonte.onerror = () => {
+    if (fonte.readyState === EventSource.CLOSED) {
+      eventos.aoFalhar('A conexão com o backend foi encerrada. Confira se a API continua ativa.')
+    } else {
+      eventos.aoReconectar()
+    }
+  }
+
+  return fonte
+}
+
