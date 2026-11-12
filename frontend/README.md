@@ -31,4 +31,4 @@ A variável `VITE_API_URL` em `.env` define o endereço do backend. O padrão é
 
 O nome e a descrição informados pelo usuário são combinados no campo `produto`, pois o schema atual do backend não possui um campo separado para nome. Os campos `tipo`, `localizacao`, `preco`, `publico` e `divulgacao` são obrigatórios na API; custos e concorrentes são opcionais.
 
-A tela de resultado utiliza somente os dados retornados pelo backend. O relatório de um agente analista e os cálculos financeiros avançados não foram simulados no frontend porque ainda não estão disponíveis na API atual.
+A tela de resultado utiliza somente os dados retornados pelo backend, incluindo o relatório do agente analista (`resultado.relatorio`): resumo, elogios, objeções, recomendações, fatores de decisão, pontos de atenção, experimentos e o comparativo entre o preço cobrado e o preço máximo que as personas pagariam. Durante a análise, o evento `etapa` mostra que o analista está escrevendo. Os cálculos financeiros ainda não estão disponíveis na API.

@@ -55,6 +55,10 @@ export default function App() {
             setStatusTexto('As primeiras avaliações estão chegando...')
           }
         },
+        aoIniciarAnalise: () => {
+          setRodadaAtual(2)
+          setStatusTexto('Debate concluído. O analista está lendo tudo e escrevendo o relatório...')
+        },
         aoFinalizar: (resultadoFinal) => {
           setMensagens(resultadoFinal.mensagens)
           setResultado(resultadoFinal)

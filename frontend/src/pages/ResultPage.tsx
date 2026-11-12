@@ -1,11 +1,16 @@
 import AgentCard from '../components/AgentCard'
 import MessageCard from '../components/MessageCard'
+import RelatorioAnalista from '../components/RelatorioAnalista'
 import { mudouDePosicao, type PersonaPublica, type ResultadoSimulacao } from '../types'
 
 interface ResultPageProps {
   personas: PersonaPublica[]
   resultado: ResultadoSimulacao
   onNovaAvaliacao: () => void
+}
+
+function formatarReais(valor: number): string {
+  return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 }
 
 function formatarDuracao(segundos: number): string {
@@ -28,8 +33,21 @@ export default function ResultPage({ personas, resultado, onNovaAvaliacao }: Res
     nao: mensagensDeReferencia.filter((mensagem) => mensagem.opiniao.compraria === 'nao').length,
   }
 
-  const objecoes = [...new Set(mensagensDeReferencia.flatMap((mensagem) => mensagem.opiniao.objecoes))].slice(0, 6)
-  const pontosPositivos = [...new Set(mensagensDeReferencia.flatMap((mensagem) => mensagem.opiniao.pontos_positivos))].slice(0, 6)
+  // Relatório do agente analista: números calculados pelo backend + texto escrito pela IA.
+  // Se não vier (backend antigo), a tela continua funcionando com os cálculos locais.
+  const relatorio = resultado.relatorio ?? null
+  const indicadores = relatorio?.indicadores ?? null
+  const analise = relatorio?.analise ?? null
+  const interesseFinal = indicadores ? indicadores.interesse_medio_r2 : mediaInteresse
+  const decisoes = indicadores ? indicadores.decisoes_r2 : contagem
+  const precoMaximo = indicadores?.preco_maximo_medio ?? null
+
+  const objecoes = analise
+    ? analise.objecoes
+    : [...new Set(mensagensDeReferencia.flatMap((mensagem) => mensagem.opiniao.objecoes))].slice(0, 6)
+  const pontosPositivos = analise
+    ? analise.elogios
+    : [...new Set(mensagensDeReferencia.flatMap((mensagem) => mensagem.opiniao.pontos_positivos))].slice(0, 6)
 
   return (
     <div className="page-shell result-shell">
@@ -59,15 +77,30 @@ export default function ResultPage({ personas, resultado, onNovaAvaliacao }: Res
           <div className="summary-grid">
             <article className="summary-card summary-highlight">
               <span>INTERESSE SIMULADO</span>
-              <strong>{mediaInteresse.toFixed(1).replace('.', ',')}<small>/10</small></strong>
-              <p>Média das opiniões após o debate</p>
-              <div className="interest-meter"><span style={{ width: `${mediaInteresse * 10}%` }} /></div>
+              <strong>{interesseFinal.toFixed(1).replace('.', ',')}<small>/10</small></strong>
+              <p>
+                {indicadores
+                  ? `Antes do debate: ${indicadores.interesse_medio_r1.toFixed(1).replace('.', ',')} · depois: ${indicadores.interesse_medio_r2.toFixed(1).replace('.', ',')}`
+                  : 'Média das opiniões após o debate'}
+              </p>
+              <div className="interest-meter"><span style={{ width: `${interesseFinal * 10}%` }} /></div>
             </article>
-            <article className="summary-card">
-              <span>OPINIÕES RECEBIDAS</span>
-              <strong>{resultado.mensagens.length}<small> / 10</small></strong>
-              <p>5 consumidores em 2 rodadas</p>
-            </article>
+            {indicadores && precoMaximo !== null ? (
+              <article className={`summary-card ${precoMaximo < indicadores.preco_ofertado ? 'price-below' : 'price-ok'}`}>
+                <span>PREÇO QUE PAGARIAM</span>
+                <strong>{formatarReais(precoMaximo)}</strong>
+                <p>Média do máximo aceito · você cobra {formatarReais(indicadores.preco_ofertado)}</p>
+                <div className="price-meter" aria-hidden="true">
+                  <span style={{ width: `${Math.min(100, (precoMaximo / indicadores.preco_ofertado) * 100)}%` }} />
+                </div>
+              </article>
+            ) : (
+              <article className="summary-card">
+                <span>OPINIÕES RECEBIDAS</span>
+                <strong>{resultado.mensagens.length}<small> / 10</small></strong>
+                <p>5 consumidores em 2 rodadas</p>
+              </article>
+            )}
             <article className="summary-card">
               <span>TEMPO DE SIMULAÇÃO</span>
               <strong>{formatarDuracao(resultado.duracao_segundos)}</strong>
@@ -87,13 +120,13 @@ export default function ResultPage({ personas, resultado, onNovaAvaliacao }: Res
             <span className="section-side-caption">Com base na 2ª rodada</span>
           </div>
           <div className="decision-overview">
-            <div className="decision-stat decision-yes"><span className="decision-dot" /><strong>{contagem.sim}</strong><span>Comprariam</span></div>
-            <div className="decision-stat decision-maybe"><span className="decision-dot" /><strong>{contagem.talvez}</strong><span>Talvez</span></div>
-            <div className="decision-stat decision-no"><span className="decision-dot" /><strong>{contagem.nao}</strong><span>Não comprariam</span></div>
-            <div className="decision-bar" aria-label={`${contagem.sim} comprariam, ${contagem.talvez} talvez, ${contagem.nao} não comprariam`}>
-              <span className="bar-yes" style={{ width: `${contagem.sim * 20}%` }} />
-              <span className="bar-maybe" style={{ width: `${contagem.talvez * 20}%` }} />
-              <span className="bar-no" style={{ width: `${contagem.nao * 20}%` }} />
+            <div className="decision-stat decision-yes"><span className="decision-dot" /><strong>{decisoes.sim}</strong><span>Comprariam</span></div>
+            <div className="decision-stat decision-maybe"><span className="decision-dot" /><strong>{decisoes.talvez}</strong><span>Talvez</span></div>
+            <div className="decision-stat decision-no"><span className="decision-dot" /><strong>{decisoes.nao}</strong><span>Não comprariam</span></div>
+            <div className="decision-bar" aria-label={`${decisoes.sim} comprariam, ${decisoes.talvez} talvez, ${decisoes.nao} não comprariam`}>
+              <span className="bar-yes" style={{ width: `${decisoes.sim * 20}%` }} />
+              <span className="bar-maybe" style={{ width: `${decisoes.talvez * 20}%` }} />
+              <span className="bar-no" style={{ width: `${decisoes.nao * 20}%` }} />
             </div>
           </div>
         </section>
@@ -104,14 +137,16 @@ export default function ResultPage({ personas, resultado, onNovaAvaliacao }: Res
             {pontosPositivos.length ? <ul>{pontosPositivos.map((ponto, i) => <li key={i}>{ponto}</li>)}</ul> : <p className="no-insight">Nenhum ponto positivo foi listado nas respostas finais.</p>}
           </article>
           <article className="insight-panel">
-            <div className="insight-heading"><span className="insight-icon objection-icon">−</span><div><span>PONTOS DE ATENÇÃO</span><h3>O que gerou objeção</h3></div></div>
+            <div className="insight-heading"><span className="insight-icon objection-icon">−</span><div><span>OBJEÇÕES</span><h3>O que gerou objeção</h3></div></div>
             {objecoes.length ? <ul>{objecoes.map((objecao, i) => <li key={i}>{objecao}</li>)}</ul> : <p className="no-insight">Nenhuma objeção foi listada nas respostas finais.</p>}
           </article>
         </section>
 
+        {relatorio && <RelatorioAnalista relatorio={relatorio} indiceSecao="06" />}
+
         <section className="final-agents-section">
           <div className="section-heading">
-            <div><span className="section-index">06 <span>/ PERFIS</span></span><h2>A percepção de cada agente</h2></div>
+            <div><span className="section-index">{relatorio ? '07' : '06'} <span>/ PERFIS</span></span><h2>A percepção de cada agente</h2></div>
           </div>
           <div className="agents-grid result-agents-grid">
             {personas.map((persona) => (
@@ -128,7 +163,7 @@ export default function ResultPage({ personas, resultado, onNovaAvaliacao }: Res
 
         <section className="full-feed-section">
           <div className="section-heading feed-heading">
-            <div><span className="section-index">07 <span>/ HISTÓRICO</span></span><h2>Debate completo</h2></div>
+            <div><span className="section-index">{relatorio ? '08' : '07'} <span>/ HISTÓRICO</span></span><h2>Debate completo</h2></div>
             <span className="feed-count">{resultado.mensagens.length} mensagens</span>
           </div>
           <div className="message-list">
@@ -142,7 +177,7 @@ export default function ResultPage({ personas, resultado, onNovaAvaliacao }: Res
 
         <div className="result-disclaimer">
           <span>i</span>
-          <p><strong>Importante:</strong> os resultados representam percepções de consumidores sintéticos, não uma amostra estatística nem uma previsão de vendas. Use os pontos levantados como hipóteses para testar com clientes reais.</p>
+          <p><strong>Importante:</strong> {relatorio?.aviso || 'os resultados representam percepções de consumidores sintéticos, não uma amostra estatística nem uma previsão de vendas. Use os pontos levantados como hipóteses para testar com clientes reais.'}</p>
         </div>
         <button className="evaluate-button new-evaluation-button" onClick={onNovaAvaliacao}>Avaliar outra ideia <span>↗</span></button>
       </main>

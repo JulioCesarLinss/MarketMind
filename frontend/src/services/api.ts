@@ -53,6 +53,7 @@ export async function criarSimulacao(
 
 interface EventosFeed {
   aoReceberMensagem: (mensagem: MensagemDebate) => void
+  aoIniciarAnalise?: () => void
   aoFinalizar: (resultado: ResultadoSimulacao) => void
   aoFalhar: (mensagem: string) => void
   aoReconectar: () => void
@@ -69,6 +70,11 @@ export function conectarFeed(id: string, eventos: EventosFeed): EventSource {
       eventos.aoFalhar('A API enviou uma resposta que não pôde ser lida.')
       fonte.close()
     }
+  })
+
+  // O debate terminou e o agente analista começou a escrever o relatório
+  fonte.addEventListener('etapa', () => {
+    eventos.aoIniciarAnalise?.()
   })
 
   fonte.addEventListener('fim', (evento) => {
