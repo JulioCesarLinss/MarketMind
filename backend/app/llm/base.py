@@ -23,11 +23,19 @@ class RespostaInvalidaError(Exception):
 
 def _descrever_campo(prop: dict) -> str:
     """Traduz uma propriedade do JSON Schema para uma descrição curta em português."""
-    if "enum" in prop:
+    if "anyOf" in prop:  # campo opcional, ex.: float | None
+        tipos = {p.get("type") for p in prop["anyOf"]}
+        if "number" in tipos or "integer" in tipos:
+            tipo = "número ou null"
+        else:
+            tipo = "texto ou null"
+    elif "enum" in prop:
         tipo = "um destes valores: " + ", ".join(json.dumps(v, ensure_ascii=False) for v in prop["enum"])
     elif prop.get("type") == "integer":
         faixa = f" de {prop['minimum']} a {prop['maximum']}" if "minimum" in prop and "maximum" in prop else ""
         tipo = f"número inteiro{faixa}"
+    elif prop.get("type") == "number":
+        tipo = "número"
     elif prop.get("type") == "array":
         tipo = "lista de textos"
     elif prop.get("type") == "boolean":

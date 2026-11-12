@@ -192,7 +192,9 @@ Toda resposta de agente é **JSON validado com Pydantic**. Isso deixa o dashboar
   "compraria": "sim | nao | talvez",
   "pontos_positivos": ["<ponto positivo>"],
   "objecoes": ["<objeção>"],
-  "mudou_de_opiniao": false
+  "mudou_de_opiniao": false,
+  "preco_maximo": 12.0,        // quanto pagaria no máximo (ou null) → alimenta a calculadora
+  "o_que_mudaria": "<o que faria mudar de decisão>"
 }
 ```
 
@@ -238,6 +240,49 @@ Rodar: `python -m scripts.simular` (ou `--provider mock` para não gastar cota; 
 - **~14.700 tokens por simulação**, acima do limite de 8.000/minuto do Groq grátis → as últimas falas esperaram 12–29 s. Tempo total: ~46 s.
 - **Problema de qualidade:** todas as falas da rodada 2 começaram com "Concordo com..." e várias notas ficaram em 5. Próximo passo: ajustar prompts para gerar discordância real e notas mais variadas.
 - **Ideia para reduzir tokens:** o `gpt-oss` é um modelo de raciocínio; configurar esforço de raciocínio baixo pode cortar muitos tokens (a testar).
+
+**Refinamento das personas** (`agents/personas.py`, `agents/debate.py`):
+- **Personas genéricas, que se adaptam ao negócio:** não sabemos o que o usuário vai cadastrar, então os perfis descrevem atitudes (preço, qualidade, tempo, diferenciação, proximidade), sem citar nenhum ramo. A regra "Como pensar" manda cada persona entender primeiro como aquele tipo de negócio funciona (produto ou serviço; presencial, entrega, agendamento ou online) e traduzir suas prioridades para ele. Exemplo: "rapidez" numa barbearia vira horário fácil de marcar, não "corte em 15 min". Um teste garante que nenhuma persona cita "entrega", "delivery", "app" etc.
+- **Personas mais ricas:** `perfil_vida`, `jeito_de_falar`, `convence_se_com`, `contradicao` (conflito interno) e `discorda_de` (um tipo de opinião que incomoda, não uma persona fixa, para as respostas não convergirem todas na mesma pessoa).
+- **Regras comuns** (`REGRAS`):
+  - a maioria NÃO compra de negócio novo;
+  - explicar o raciocínio com detalhes concretos da oferta;
+  - citar ao menos uma objeção e não repetir os outros;
+  - ler TODOS os campos antes de dizer que falta algo (o agendamento, por exemplo, pode estar em "Divulgação");
+  - não inventar números nem características;
+  - régua de notas com coerência ("sim" exige 7+, "nao" exige 4 ou menos).
+- **Entrada do usuário:** usa só os campos do formulário do README. Sem concorrentes cadastrados, o contexto diz "nenhum concorrente informado", para ninguém inventar.
+- **Rodada 2** (continua sendo "cada persona reage às opiniões das outras", como no README):
+  - recebe de cada outra persona a fala, a nota, a decisão, **do que gostou**, a **principal objeção** e a **sugestão ao dono**, que são a informação nova capaz de mudar uma opinião;
+  - começa respondendo a quem mais discorda, depois comenta o que mexeu com a própria avaliação;
+  - proibido começar com "Concordo";
+  - as falas chegam **embaralhadas** (semente opcional em `Orquestrador(semente=...)`);
+  - pode mudar a nota quando algo do debate a convencer, deixando claro se depende de o dono adotar uma sugestão.
+- **Resposta** ganhou `preco_maximo` (vai alimentar a calculadora) e `o_que_mudaria` (uma mudança realista que o dono conseguiria fazer). A fala tem de 2 a 4 frases com argumentos concretos.
+- **Tentativas que pioraram e foram desfeitas:**
+  - frase de exemplo por persona: o modelo copiava literalmente;
+  - limite de 3 frases e roteiro rígido "cite 2 pessoas": falas superficiais;
+  - "sugestões não mudam a nota": ninguém mudava de opinião;
+  - "se faltar algo, diga que faltou": a persona dizia que não havia agendamento, mas ele estava no campo Divulgação.
+- **Tokens:** `LLM_REASONING_EFFORT=low` é enviado aos modelos `gpt-oss` (padrão `low`; vazio = não enviar).
+
+**Medir a qualidade:** `python -m scripts.avaliar_personas --negocio cafeteria` (ou `--todos`, ou `--provider mock`; `--salvar arquivo.json`). As métricas estão em `services/metricas.py`. Há 4 negócios de exemplo em `agents/exemplos.py` (`cafeteria`, `barbearia`, `roupas`, `marmita`), que também servem para `python -m scripts.simular --negocio barbearia`.
+
+| Métrica (Groq, 2026-11-11) | Prompt original (cafeteria) | Atual, gpt-oss-20b (barbearia) | Atual, gpt-oss-120b (barbearia) | Meta |
+|---|---|---|---|---|
+| Falas da rodada 2 começando com "Concordo" | 100% | **0%** | **0%** | < 40% |
+| Falas da rodada 2 citando 2+ personas | — | 80% | **100%** | ≥ 60% |
+| Persona mais citada (% das citações) | — | 33% | 30% | ≤ 40% |
+| Palavras por fala (rodada 2) | — | 82 | 83 | — |
+| Amplitude das notas (rodada 1 → 2) | 3 → 3 | 1 → 1 | 2 → **4** | ≥ 4 |
+| Mudaram de posição | 1 | 2 | 2 | — |
+| Tokens | 14.419 | 20.470 | 21.290 | < 10 mil ❌ |
+
+Observações:
+- **O modelo pesa mais que o prompt.** Com o 20b, as falas ainda escorregam: saem do personagem ("eu curto o toque de personalização", dito pelo Econômico) e inventam dados ("a concorrência também dá cerveja"). Com o **120b**, cada persona fica no personagem, usa os dados reais (R$ 35 na rua, R$ 70 no shopping, o app) e propõe sugestões criativas ("desconto para marcações pelo app", "retoque gratuito"). **Recomendação:** `LLM_MODEL_PERSONAS=openai/gpt-oss-120b`.
+- **Tokens:** cerca de 85% é texto de entrada (regras + formato + negócio, repetidos em cada uma das 10 chamadas; na rodada 2, também o histórico e o resumo dos outros). Passa dos 8 mil/min do Groq grátis, então as últimas falas esperam ou vão para a reserva Gemini (simulação de 75–85 s).
+
+**Fica para depois do MVP:** mais personas (impulsiva, desconfiada de negócio novo, não-consumidor) e várias instâncias por arquétipo, pois cada persona custa ~2 chamadas; adaptar as personas ao negócio com IA; validar as respostas com clientes reais de alguns negócios (bom argumento para a apresentação).
 
 ### 4.5 Linguagem responsável (vale para prompts e interface)
 
@@ -349,6 +394,7 @@ Atenções:
 
 | Data | Autor | Commit | Mudança |
 |---|---|---|---|
+| 2026-11-11 | Júlio | `feat: personas genéricas e debate com discordância real` | Personas sem ramo fixo que se adaptam ao tipo de negócio; vida, tom, contradição; régua de notas, "leia todos os campos" e "não invente dados"; rodada 2 com o que os outros gostaram, objeções e sugestões, sem "Concordo", falas embaralhadas; testes com gpt-oss-120b para personas; `preco_maximo`/`o_que_mudaria`; `reasoning_effort=low`; 4 negócios de exemplo; `avaliar_personas` + `metricas.py`; 7 testes novos. "Concordo" na rodada 2: 100% → 0% |
 | 2026-11-11 | Júlio | `fix: mudança de opinião calculada pelo código` | `mudou_de_posicao()`: mudou a decisão de compra ou a nota variou 2+ pontos — a IA às vezes declarava errado; resumo mostra quais falas usaram a reserva |
 | 2026-11-11 | Júlio | `feat: orquestrador do debate` | `Orquestrador` (2 rodadas, memória por persona, concorrência limitada, aviso por fala), `MensagemDebate`/`ResultadoSimulacao`, contagem de tokens nos provedores, script `simular`, 5 testes novos; 1ª simulação real: ~14,7k tokens, 2 de 5 mudaram de opinião |
 | 2026-11-11 | Júlio | `feat: reserva Groq → Gemini → mock` | `FallbackProvider`, `gerar_com_origem` (registra quem respondeu), novas tentativas no Gemini em 429/503, variáveis `LLM_FALLBACK_*` no `.env.example`, 4 testes novos |

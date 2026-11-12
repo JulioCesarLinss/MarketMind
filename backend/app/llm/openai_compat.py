@@ -5,6 +5,7 @@ Muda apenas o endereço (base_url) e a chave.
 
 from openai import AsyncOpenAI
 
+from app.config import settings
 from app.llm.base import LLMProvider, Mensagens
 
 GROQ_BASE_URL = "https://api.groq.com/openai/v1"
@@ -20,10 +21,15 @@ class OpenAICompatProvider(LLMProvider):
         self.client = AsyncOpenAI(base_url=base_url, api_key=api_key, max_retries=3)
 
     async def _completar(self, sistema: str, mensagens: Mensagens) -> str:
+        extras = {}
+        # gpt-oss é um modelo de raciocínio: "low" reduz muito os tokens gastos pensando
+        if settings.llm_reasoning_effort and "gpt-oss" in self.modelo:
+            extras["reasoning_effort"] = settings.llm_reasoning_effort
         resposta = await self.client.chat.completions.create(
             model=self.modelo,
             messages=[{"role": "system", "content": sistema}, *mensagens],
             response_format={"type": "json_object"},  # garante JSON sintaticamente válido
+            **extras,
         )
         if resposta.usage:
             self.tokens_usados += resposta.usage.total_tokens

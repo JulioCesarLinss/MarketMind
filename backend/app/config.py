@@ -30,6 +30,10 @@ class Settings:
     # Quantas chamadas à IA ao mesmo tempo (baixo = menos risco de estourar limite por minuto)
     llm_concorrencia: int = int(_env("LLM_CONCORRENCIA", "2") or 2)
 
+    # Esforço de raciocínio dos modelos gpt-oss (low | medium | high; vazio = não enviar).
+    # "low" gasta bem menos tokens.
+    llm_reasoning_effort: str = _env("LLM_REASONING_EFFORT", "low").lower()
+
     # Chaves
     groq_api_key: str = _env("GROQ_API_KEY")
     gemini_api_key: str = _env("GEMINI_API_KEY")

@@ -10,6 +10,7 @@ para não estourar o limite por minuto do plano grátis.
 """
 
 import asyncio
+import random
 import time
 from collections.abc import Awaitable, Callable
 
@@ -30,11 +31,14 @@ class Orquestrador:
         personas: list[Persona] | None = None,
         concorrencia: int | None = None,
         ao_publicar: AoPublicar | None = None,
+        semente: int | None = None,
     ):
         self.provider = provider
         self.personas = personas or list(PERSONAS.values())
         self.semaforo = asyncio.Semaphore(concorrencia or settings.llm_concorrencia)
         self.ao_publicar = ao_publicar
+        # Embaralha a ordem das falas na rodada 2 (semente fixa = resultado reproduzível nos testes)
+        self.rng = random.Random(semente)
         # Memória curta: histórico de conversa de cada persona, só durante esta simulação
         self.memoria: dict[str, Mensagens] = {p.id: [] for p in self.personas}
 
@@ -44,7 +48,7 @@ class Orquestrador:
 
         rodada_1 = await self._rodada(1, lambda persona: pedido_rodada_1(negocio))
         rodada_2 = await self._rodada(
-            2, lambda persona: pedido_rodada_2([m for m in rodada_1 if m.persona_id != persona.id])
+            2, lambda persona: pedido_rodada_2([m for m in rodada_1 if m.persona_id != persona.id], self.rng)
         )
 
         return ResultadoSimulacao(

@@ -4,5 +4,7 @@
   "compraria": "talvez",
   "pontos_positivos": ["praticidade para comprar"],
   "objecoes": ["preço alto para experimentar", "nenhuma promoção de entrada"],
-  "mudou_de_opiniao": false
+  "mudou_de_opiniao": false,
+  "preco_maximo": 12.0,
+  "o_que_mudaria": "Uma promoção de primeira compra ou um combo mais barato."
 }

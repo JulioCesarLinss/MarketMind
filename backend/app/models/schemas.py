@@ -8,12 +8,19 @@ from pydantic import BaseModel, Field
 class Opiniao(BaseModel):
     """Resposta de uma persona em uma rodada do debate."""
 
-    fala: str = Field(description="Opinião da persona em linguagem natural, 1 a 3 frases, em primeira pessoa")
+    fala: str = Field(description="Opinião da persona em linguagem natural, 2 a 4 frases, em primeira pessoa, com argumentos concretos")
     interesse: int = Field(ge=0, le=10, description="Interesse em comprar, de 0 (nenhum) a 10 (total)")
     compraria: Literal["sim", "nao", "talvez"]
     pontos_positivos: list[str] = Field(default_factory=list, description="O que agradou na oferta")
     objecoes: list[str] = Field(default_factory=list, description="O que impede ou dificulta a compra")
     mudou_de_opiniao: bool = Field(default=False, description="Se mudou de posição após ouvir as outras personas")
+    preco_maximo: float | None = Field(
+        default=None, description="Preço máximo em reais que você pagaria por este produto (número, ou null se não compraria)"
+    )
+    o_que_mudaria: str = Field(
+        default="",
+        description="Uma mudança realista que o dono poderia fazer e que resolveria sua principal objeção, em uma frase",
+    )
 
 
 def mudou_de_posicao(antes: Opiniao, depois: Opiniao) -> bool:
