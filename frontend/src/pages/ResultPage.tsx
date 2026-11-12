@@ -1,6 +1,6 @@
 import AgentCard from '../components/AgentCard'
 import MessageCard from '../components/MessageCard'
-import { mudouDePosicao, type MensagemDebate, type PersonaPublica, type ResultadoSimulacao } from '../types'
+import { mudouDePosicao, type PersonaPublica, type ResultadoSimulacao } from '../types'
 
 interface ResultPageProps {
   personas: PersonaPublica[]
