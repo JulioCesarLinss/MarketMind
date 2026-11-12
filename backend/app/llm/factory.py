@@ -60,12 +60,16 @@ def criar_provider(
     provider: str | None = None,
     modelo: str | None = None,
     papel: Papel = "personas",
+    mock_no_fim: bool | None = None,
 ) -> LLMProvider:
     """Cria o provedor para um papel (personas ou analista).
 
     - Sem `provider`: cadeia do .env (principal → reserva → mock).
     - Com `provider`: só aquele provedor, sem reserva.
+    - `mock_no_fim=False`: não termina a cadeia no mock (o analista usa isso: um
+      relatório gravado de outro negócio seria enganoso).
     """
+    usar_mock = settings.llm_mock_no_fim if mock_no_fim is None else mock_no_fim
     if provider:
         return criar_provider_unico(provider, modelo or _modelo_principal(papel), _var_principal(papel))
 
@@ -82,7 +86,7 @@ def criar_provider(
         variavel = "LLM_FALLBACK_MODEL_ANALISTA" if papel == "analista" else "LLM_FALLBACK_MODEL_PERSONAS"
         cadeia.append(criar_provider_unico(settings.llm_fallback_provider, modelo_reserva, variavel))
 
-    if settings.llm_mock_no_fim and principal.nome != "mock":
+    if usar_mock and principal.nome != "mock":
         cadeia.append(MockProvider())
 
     return cadeia[0] if len(cadeia) == 1 else FallbackProvider(cadeia)

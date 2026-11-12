@@ -40,14 +40,71 @@ class MensagemDebate(BaseModel):
     duracao_segundos: float
 
 
+class AnaliseDebate(BaseModel):
+    """Parte em TEXTO do relatório, escrita pelo agente analista (IA)."""
+
+    resumo: str = Field(description="Visão geral em 3 a 5 frases: como os consumidores receberam a oferta e por quê")
+    elogios: list[str] = Field(description="2 a 4 pontos que agradaram, citando entre parênteses quem disse")
+    objecoes: list[str] = Field(
+        description="2 a 4 principais objeções, da mais citada para a menos, citando entre parênteses quem levantou"
+    )
+    fatores_de_decisao: list[str] = Field(description="2 a 4 fatores que mais pesaram na decisão de compra")
+    pontos_de_atencao: list[str] = Field(
+        description="Riscos ou pontos fracos, cada um começando pela área: 'Preço:', 'Produto:', 'Conveniência:' ou 'Divulgação:'"
+    )
+    recomendacoes: list[str] = Field(
+        description="3 a 5 ajustes concretos e viáveis para o dono, ligados às objeções, do mais importante ao menos"
+    )
+    experimentos: list[str] = Field(
+        description="2 a 3 testes baratos e rápidos com clientes reais, dizendo o que fazer e o que medir"
+    )
+
+
+class IndicadorPersona(BaseModel):
+    persona_id: str
+    persona_nome: str
+    interesse_r1: int
+    interesse_r2: int
+    compraria_r1: str
+    compraria_r2: str
+    mudou: bool = Field(description="Critério objetivo: decisão mudou ou nota variou 2+ pontos")
+    preco_maximo: float | None
+
+
+class Indicadores(BaseModel):
+    """Parte NUMÉRICA do relatório, calculada pelo código (não pela IA)."""
+
+    preco_ofertado: float
+    interesse_medio_r1: float
+    interesse_medio_r2: float
+    decisoes_r2: dict[str, int] = Field(description='Quantas personas disseram "sim", "talvez" e "nao" na rodada 2')
+    preco_maximo_medio: float | None = Field(description="Média do preço máximo que as personas pagariam (rodada 2)")
+    mudaram_de_posicao: int
+    por_persona: list[IndicadorPersona]
+
+
+class Relatorio(BaseModel):
+    indicadores: Indicadores
+    analise: AnaliseDebate | None = Field(default=None, description="None se o analista falhou")
+    origem_analise: str | None = Field(default=None, description="Quem escreveu a análise, ex.: groq/openai/gpt-oss-120b")
+    erro_analise: str | None = None
+    tokens_usados: int = 0
+    duracao_segundos: float = 0
+    aviso: str = (
+        "Opiniões geradas por IA (consumidores sintéticos): não representam uma amostra real de clientes. "
+        "Use como hipóteses a validar, não como previsão de vendas."
+    )
+
+
 class ResultadoSimulacao(BaseModel):
-    """O debate completo de uma simulação."""
+    """O debate completo de uma simulação (e, depois do analista, o relatório)."""
 
     mensagens: list[MensagemDebate]
     rodadas: int
     provedor_principal: str = Field(description="Nome do provedor principal, ex.: groq")
     tokens_usados: int
     duracao_segundos: float
+    relatorio: Relatorio | None = None
 
     def da_rodada(self, rodada: int) -> list[MensagemDebate]:
         return [m for m in self.mensagens if m.rodada == rodada]

@@ -203,16 +203,34 @@ Toda resposta de agente é **JSON validado com Pydantic**. Isso deixa o dashboar
 ```
 
 ```json
-// Relatorio (analista)
+// Relatorio (dentro de ResultadoSimulacao.relatorio)
 {
-  "resumo": "...",
-  "pontos_positivos": ["..."],
-  "objecoes": ["..."],
-  "recomendacoes": ["..."],
-  "experimentos_sugeridos": ["<experimento para validar com consumidores reais>"],
-  "interesse_por_persona": {"<persona>": 0}
+  "indicadores": {                      // calculados pelo CÓDIGO
+    "preco_ofertado": 85.0, "interesse_medio_r1": 4.2, "interesse_medio_r2": 4.6,
+    "decisoes_r2": {"sim": 1, "talvez": 1, "nao": 3}, "preco_maximo_medio": 67.5,
+    "mudaram_de_posicao": 2, "por_persona": ["..."]
+  },
+  "analise": {                          // escrita pela IA (null se falhar)
+    "resumo": "...", "elogios": ["..."], "objecoes": ["..."], "fatores_de_decisao": ["..."],
+    "pontos_de_atencao": ["Preço: ..."], "recomendacoes": ["..."], "experimentos": ["..."]
+  },
+  "origem_analise": "groq/openai/gpt-oss-120b",
+  "aviso": "Opiniões geradas por IA (consumidores sintéticos)..."
 }
 ```
+
+**Agente analista** (`agents/analista.py`):
+- **Números pelo código, texto pela IA:** `calcular_indicadores()` calcula interesse médio, decisões, preço máximo médio e quem mudou. A IA recebe esses números prontos, com a ordem de não recalcular nem inventar.
+- **Entrada:** dados do negócio + transcrição das 2 rodadas (fala, nota, decisão, do que gostou, objeções, sugestão) + indicadores.
+- **Regras:**
+  - citar quem disse cada coisa;
+  - recomendações viáveis ligadas às objeções, aproveitando as sugestões das personas;
+  - experimentos que dizem o que medir;
+  - linguagem de "hipóteses a validar".
+- **Sem mock no fim da cadeia** (`criar_provider(papel="analista", mock_no_fim=False)`): um relatório gravado de outro negócio seria enganoso. Se Groq e Gemini falharem, o resultado vem com os números e `erro_analise`, e o debate não se perde.
+- **Teste real** (debate da barbearia, gpt-oss-120b): ~4 mil tokens, ~3 s.
+  - **Bom:** usou os números certos ("R$ 85 acima do preço máximo médio de R$ 67,50"), aproveitou as sugestões das personas e propôs experimentos mensuráveis.
+  - **A observar:** às vezes atribui um elogio a todas as personas quando só algumas o citaram.
 
 ### 4.4 O debate
 
@@ -349,7 +367,7 @@ Atenções:
 - [x] Testar Groq e Gemini com chaves reais e escolher o padrão (Groq principal, Gemini reserva)
 
 ### Dia 3 — Resultado
-- [ ] Agente analista + schema `Relatorio`
+- [x] Agente analista + schema `Relatorio`
 - [ ] Calculadora financeira + testes
 - [ ] Dashboard: interesse por persona, objeções, recomendações, financeiro
 - [ ] Avisos de dados sintéticos e despesas não consideradas na interface
@@ -398,6 +416,7 @@ Atenções:
 
 | Data | Autor | Commit | Mudança |
 |---|---|---|---|
+| 2026-11-12 | Júlio | `feat: agente analista` | `agents/analista.py`: indicadores calculados pelo código + análise em texto pela IA (resumo, elogios, objeções, fatores, pontos de atenção, recomendações, experimentos); schemas `Relatorio`/`Indicadores`/`AnaliseDebate`; sem mock no fim da cadeia do analista; API envia evento `etapa` e o relatório no `fim`; `simular.py` imprime o relatório (`--sem-analista` para pular); `demo_data/analisedebate.json`; exemplo real atualizado em `docs/exemplos/`; 5 testes novos |
 | 2026-11-12 | Júlio | `feat: API FastAPI com feed ao vivo` | `app/main.py` (CORS via `FRONTEND_URL`), rotas `/health`, `/personas`, `/simulacoes` (+ `?demo=true`), `/simulacoes/{id}`, `/simulacoes/{id}/stream` (SSE com ping); `NegocioEntrada` (campos do README, até 3 concorrentes); simulações em memória com replay para quem conecta atrasado; `docs/api.md` + exemplo real em `docs/exemplos/`; 6 testes novos |
 | 2026-11-11 | Júlio | `feat: personas genéricas e debate com discordância real` | Personas sem ramo fixo que se adaptam ao tipo de negócio; vida, tom, contradição; régua de notas, "leia todos os campos" e "não invente dados"; rodada 2 com o que os outros gostaram, objeções e sugestões, sem "Concordo", falas embaralhadas; testes com gpt-oss-120b para personas; `preco_maximo`/`o_que_mudaria`; `reasoning_effort=low`; 4 negócios de exemplo; `avaliar_personas` + `metricas.py`; 7 testes novos. "Concordo" na rodada 2: 100% → 0% |
 | 2026-11-11 | Júlio | `fix: mudança de opinião calculada pelo código` | `mudou_de_posicao()`: mudou a decisão de compra ou a nota variou 2+ pontos — a IA às vezes declarava errado; resumo mostra quais falas usaram a reserva |

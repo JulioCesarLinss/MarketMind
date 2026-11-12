@@ -247,6 +247,115 @@
   ],
   "rodadas": 2,
   "provedor_principal": "groq",
-  "tokens_usados": 21290,
-  "duracao_segundos": 82.5
+  "tokens_usados": 25218,
+  "duracao_segundos": 82.5,
+  "relatorio": {
+    "indicadores": {
+      "preco_ofertado": 85.0,
+      "interesse_medio_r1": 4.2,
+      "interesse_medio_r2": 4.6,
+      "decisoes_r2": {
+        "sim": 1,
+        "talvez": 1,
+        "nao": 3
+      },
+      "preco_maximo_medio": 67.5,
+      "mudaram_de_posicao": 2,
+      "por_persona": [
+        {
+          "persona_id": "economico",
+          "persona_nome": "Consumidor Econômico",
+          "interesse_r1": 3,
+          "interesse_r2": 3,
+          "compraria_r1": "nao",
+          "compraria_r2": "nao",
+          "mudou": false,
+          "preco_maximo": null
+        },
+        {
+          "persona_id": "exigente",
+          "persona_nome": "Consumidor Exigente",
+          "interesse_r1": 5,
+          "interesse_r2": 7,
+          "compraria_r1": "talvez",
+          "compraria_r2": "sim",
+          "mudou": true,
+          "preco_maximo": 70.0
+        },
+        {
+          "persona_id": "ocupado",
+          "persona_nome": "Consumidor Ocupado",
+          "interesse_r1": 5,
+          "interesse_r2": 4,
+          "compraria_r1": "talvez",
+          "compraria_r2": "nao",
+          "mudou": true,
+          "preco_maximo": 70.0
+        },
+        {
+          "persona_id": "critico",
+          "persona_nome": "Consumidor Crítico",
+          "interesse_r1": 5,
+          "interesse_r2": 6,
+          "compraria_r1": "talvez",
+          "compraria_r2": "talvez",
+          "mudou": false,
+          "preco_maximo": 75.0
+        },
+        {
+          "persona_id": "fiel_regiao",
+          "persona_nome": "Consumidor Fiel à Região",
+          "interesse_r1": 3,
+          "interesse_r2": 3,
+          "compraria_r1": "nao",
+          "compraria_r2": "nao",
+          "mudou": false,
+          "preco_maximo": 55.0
+        }
+      ]
+    },
+    "analise": {
+      "resumo": "Os consumidores perceberam a barbearia como premium, mas o preço de R$85 ainda é visto como alto em relação à concorrência. O diferencial da cerveja artesanal e da toalha quente atraiu atenção, porém não foi suficiente para justificar o custo. As objeções giram em torno do preço, falta de provas de qualidade e ausência de vínculo local. Pequenos ajustes de preço, descontos via app e garantias de satisfação podem melhorar a percepção de valor.",
+      "elogios": [
+        "Cerveja artesanal de cortesia (Econômico, Exigente, Ocupado, Crítico, Fiel à Região)",
+        "Toalha quente que eleva a experiência (Econômico, Exigente, Ocupado, Crítico, Fiel à Região)",
+        "Agendamento fácil via aplicativo (Econômico, Ocupado, Crítico, Fiel à Região)",
+        "Local central no centro comercial, fácil acesso (Exigente, Crítico)"
+      ],
+      "objecoes": [
+        "Preço R$85 muito acima da concorrência (Econômico, Exigente, Ocupado, Crítico, Fiel à Região)",
+        "Falta de avaliações verificáveis ou garantia de qualidade (Exigente, Crítico)",
+        "Ausência de vínculo com a comunidade local e ambiente impessoal (Fiel à Região)",
+        "Benefício da cerveja não compensa o valor extra (Econômico, Ocupado)"
+      ],
+      "fatores_de_decisao": [
+        "Preço percebido versus valor entregue",
+        "Conveniência do agendamento via app",
+        "Diferenciais sensoriais (toalha quente, cerveja)",
+        "Credibilidade e prova social (avaliações, garantia)"
+      ],
+      "pontos_de_atencao": [
+        "Preço: R$85 está 27% acima da rede de shopping (R$70) e 143% acima da barbearia de rua (R$35)",
+        "Produto: Diferenciais (cerveja, toalha) ainda não convencem como valor suficiente",
+        "Conveniência: App é positivo, mas não compensa preço alto",
+        "Divulgação: Falta de avaliações reais e de vínculo com a comunidade local"
+      ],
+      "recomendacoes": [
+        "Aplicar desconto exclusivo de 20% para agendamentos pelo app, reduzindo o preço para aproximadamente R$68 (para atender Econ��mico, Ocupado)",
+        "Implementar garantia de satisfação com retoque gratuito, comunicando claramente nas redes (para Exigente, Crítico)",
+        "Criar programa de fidelidade local com desconto para residentes da região e promover eventos de confraternização para gerar vínculo (para Fiel à Região)",
+        "Reavaliar a precificação e lançar um pacote mensal de R$60 com corte, barba, toalha quente e cerveja, oferecendo melhor custo‑benefício (para todos)"
+      ],
+      "experimentos": [
+        "Oferecer desconto de 20% no app para os 30 primeiros agendamentos e medir taxa de conversão e retenção em 30 dias",
+        "Testar garantia de satisfação: oferecer retoque gratuito ao cliente que não ficar satisfeito, registrar número de solicitações e impacto na recomendação (NPS)",
+        "Lançar um pacote mensal de R$60 para 20 clientes piloto, acompanhar frequência de visitas e receita média por cliente por 2 meses"
+      ]
+    },
+    "origem_analise": "groq/openai/gpt-oss-120b",
+    "erro_analise": null,
+    "tokens_usados": 3928,
+    "duracao_segundos": 2.4,
+    "aviso": "Opiniões geradas por IA (consumidores sintéticos): não representam uma amostra real de clientes. Use como hipóteses a validar, não como previsão de vendas."
+  }
 }

@@ -10,6 +10,7 @@ from collections import OrderedDict
 from dataclasses import dataclass, field
 from typing import Literal
 
+from app.agents.analista import analisar
 from app.llm.base import LLMProvider
 from app.models.schemas import MensagemDebate, ResultadoSimulacao
 from app.services.orquestrador import Orquestrador
@@ -18,11 +19,12 @@ log = logging.getLogger(__name__)
 
 Status = Literal["rodando", "concluida", "erro"]
 LIMITE_EM_MEMORIA = 50  # guarda só as últimas N simulações
+ETAPA_ANALISE = '{"etapa": "analise"}'
 
 
 @dataclass
 class Evento:
-    tipo: Literal["mensagem", "fim", "erro"]
+    tipo: Literal["mensagem", "etapa", "fim", "erro"]
     dados: str  # JSON pronto para enviar
 
 
@@ -31,6 +33,7 @@ class Simulacao:
     id: str
     negocio: dict
     status: Status = "rodando"
+    etapa: Literal["debate", "analise"] = "debate"
     mensagens: list[MensagemDebate] = field(default_factory=list)
     resultado: ResultadoSimulacao | None = None
     erro: str | None = None
@@ -44,6 +47,8 @@ class Simulacao:
     def eventos_passados(self) -> list[Evento]:
         """O que já aconteceu, para quem conecta no meio (ou depois) da simulação."""
         eventos = [Evento("mensagem", m.model_dump_json()) for m in self.mensagens]
+        if self.etapa == "analise":
+            eventos.append(Evento("etapa", ETAPA_ANALISE))
         if self.status == "concluida" and self.resultado:
             eventos.append(Evento("fim", self.resultado.model_dump_json()))
         elif self.status == "erro":
@@ -58,22 +63,30 @@ class GerenciadorSimulacoes:
     def obter(self, id_: str) -> Simulacao | None:
         return self._simulacoes.get(id_)
 
-    def iniciar(self, negocio: dict, provider: LLMProvider) -> Simulacao:
+    def iniciar(self, negocio: dict, provider: LLMProvider, provider_analista: LLMProvider | None) -> Simulacao:
         sim = Simulacao(id=uuid.uuid4().hex[:12], negocio=negocio)
         self._simulacoes[sim.id] = sim
         while len(self._simulacoes) > LIMITE_EM_MEMORIA:
             self._simulacoes.popitem(last=False)
         # Roda em segundo plano: a API responde na hora com o id
-        sim.tarefa = asyncio.create_task(self._executar(sim, provider))
+        sim.tarefa = asyncio.create_task(self._executar(sim, provider, provider_analista))
         return sim
 
-    async def _executar(self, sim: Simulacao, provider: LLMProvider) -> None:
+    async def _executar(self, sim: Simulacao, provider: LLMProvider, provider_analista: LLMProvider | None) -> None:
         async def ao_publicar(m: MensagemDebate) -> None:
             sim.mensagens.append(m)
             sim.avisar(Evento("mensagem", m.model_dump_json()))
 
         try:
-            sim.resultado = await Orquestrador(provider, ao_publicar=ao_publicar).executar(sim.negocio)
+            resultado = await Orquestrador(provider, ao_publicar=ao_publicar).executar(sim.negocio)
+
+            # Debate terminou: o analista escreve o relatório (o front pode mostrar "analisando...")
+            sim.etapa = "analise"
+            sim.avisar(Evento("etapa", ETAPA_ANALISE))
+            resultado.relatorio = await analisar(provider_analista, sim.negocio, resultado)
+            resultado.tokens_usados += resultado.relatorio.tokens_usados
+
+            sim.resultado = resultado
             sim.status = "concluida"
             sim.avisar(Evento("fim", sim.resultado.model_dump_json()))
         except Exception as erro:  # noqa: BLE001 — qualquer falha vira evento de erro no feed

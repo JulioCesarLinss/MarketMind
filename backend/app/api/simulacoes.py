@@ -63,7 +63,12 @@ async def criar_simulacao(
         provider = criar_provider("mock" if demo else None)
     except ConfiguracaoLLMError as erro:
         raise HTTPException(status_code=503, detail=f"IA não configurada no servidor: {erro}") from erro
-    sim = gerenciador.iniciar(negocio.model_dump(), provider)
+    try:
+        # Sem mock no fim: um relatório gravado de outro negócio seria enganoso
+        analista = criar_provider("mock") if demo else criar_provider(papel="analista", mock_no_fim=False)
+    except ConfiguracaoLLMError:
+        analista = None  # o resultado vem só com os números do relatório
+    sim = gerenciador.iniciar(negocio.model_dump(), provider, analista)
     return SimulacaoCriada(id=sim.id, status=sim.status)
 
 
@@ -89,7 +94,8 @@ def _sse(evento: Evento) -> str:
 async def acompanhar_simulacao(id_: str):
     """Feed ao vivo (SSE). Eventos:
     - `mensagem`: uma fala (MensagemDebate)
-    - `fim`: resultado completo (ResultadoSimulacao); depois a conexão fecha
+    - `etapa`: {"etapa": "analise"} quando o debate acaba e o analista começa a escrever o relatório
+    - `fim`: resultado completo (ResultadoSimulacao, com `relatorio`); depois a conexão fecha
     - `erro`: texto do erro; depois a conexão fecha
 
     Quem conecta atrasado recebe primeiro as falas que já aconteceram.

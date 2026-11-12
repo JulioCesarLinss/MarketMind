@@ -5,6 +5,7 @@ Uso (dentro da pasta backend/, com o ambiente virtual ativado):
     python -m scripts.simular --provider mock       # sem gastar cota
     python -m scripts.simular --salvar saida.json   # salva o debate completo em JSON
     python -m scripts.simular --negocio barbearia   # outro negócio de exemplo (cafeteria | barbearia | roupas | marmita)
+    python -m scripts.simular --sem-analista        # só o debate, sem o relatório
 """
 
 import argparse
@@ -13,10 +14,11 @@ import logging
 import sys
 from pathlib import Path
 
+from app.agents.analista import analisar
 from app.agents.exemplos import NEGOCIOS
 from app.llm import criar_provider
 from app.llm.factory import ConfiguracaoLLMError
-from app.models.schemas import MensagemDebate, ResultadoSimulacao
+from app.models.schemas import MensagemDebate, Relatorio, ResultadoSimulacao
 from app.services.orquestrador import Orquestrador
 
 ICONES = {"sim": "✅", "talvez": "🤔", "nao": "❌"}
@@ -67,11 +69,36 @@ def imprimir_resumo(resultado: ResultadoSimulacao) -> None:
               + ", ".join(f"{m.persona_nome} (rodada {m.rodada}, via {m.origem})" for m in reservas))
 
 
+def imprimir_relatorio(rel: Relatorio) -> None:
+    print("\n" + "=" * 70)
+    print("RELATÓRIO DO ANALISTA")
+    print("=" * 70)
+    if rel.analise is None:
+        print(f"  ⚠ {rel.erro_analise}")
+        return
+    a = rel.analise
+    print(f"\n{a.resumo}")
+    for titulo, itens in [
+        ("Elogios", a.elogios),
+        ("Objeções", a.objecoes),
+        ("Fatores de decisão", a.fatores_de_decisao),
+        ("Pontos de atenção", a.pontos_de_atencao),
+        ("Recomendações", a.recomendacoes),
+        ("Experimentos para validar com clientes reais", a.experimentos),
+    ]:
+        print(f"\n{titulo}:")
+        for item in itens:
+            print(f"  • {item}")
+    print(f"\n  ({rel.duracao_segundos}s, {rel.tokens_usados} tokens, via {rel.origem_analise})")
+    print(f"\n  {rel.aviso}")
+
+
 async def main() -> None:
     parser = argparse.ArgumentParser(description="Simulação completa do debate")
     parser.add_argument("--provider", help="força um provedor, sem reserva (mock | groq | gemini | ollama)")
     parser.add_argument("--concorrencia", type=int, help="chamadas simultâneas (padrão: LLM_CONCORRENCIA)")
     parser.add_argument("--negocio", choices=list(NEGOCIOS), default="cafeteria", help="negócio de exemplo")
+    parser.add_argument("--sem-analista", action="store_true", help="só o debate, sem o relatório")
     parser.add_argument("--salvar", help="caminho de um arquivo .json para salvar o resultado")
     args = parser.parse_args()
 
@@ -88,6 +115,18 @@ async def main() -> None:
     orquestrador = Orquestrador(provider, concorrencia=args.concorrencia, ao_publicar=imprimir_fala)
     resultado = await orquestrador.executar(negocio)
     imprimir_resumo(resultado)
+
+    if not args.sem_analista:
+        print("\n  O analista está lendo o debate...")
+        try:
+            # Sem mock no fim: um relatório gravado de outro negócio seria enganoso
+            analista = criar_provider(args.provider, papel="analista", mock_no_fim=False)
+        except ConfiguracaoLLMError as erro:
+            print(f"  Analista não configurado: {erro}")
+            analista = None
+        resultado.relatorio = await analisar(analista, negocio, resultado)
+        resultado.tokens_usados += resultado.relatorio.tokens_usados
+        imprimir_relatorio(resultado.relatorio)
 
     if args.salvar:
         Path(args.salvar).write_text(resultado.model_dump_json(indent=2), encoding="utf-8")

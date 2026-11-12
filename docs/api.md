@@ -19,7 +19,8 @@ O CORS já libera `http://localhost:5173` (porta padrão do Vite).
 
 ```
 1. POST /simulacoes?demo=true   (dados do formulário)  →  { "id": "bc7327ef54ca", "status": "rodando" }
-2. GET  /simulacoes/{id}/stream  →  feed ao vivo: uma fala por evento, depois o evento "fim"
+2. GET  /simulacoes/{id}/stream  →  feed ao vivo: uma fala por evento, o aviso "etapa" (analista escrevendo)
+                                    e por fim o evento "fim" com o resultado + relatório
 3. GET  /simulacoes/{id}         →  tudo de uma vez (ex.: ao recarregar a página)
 ```
 
@@ -74,9 +75,12 @@ feed.addEventListener("mensagem", (e) => {
   const msg: MensagemDebate = JSON.parse(e.data);
   adicionarNoFeed(msg);               // chega uma fala por vez (rodada 1, depois rodada 2)
 });
+feed.addEventListener("etapa", () => {
+  mostrarCarregando("O analista está lendo o debate..."); // chega quando as 10 falas terminam
+});
 feed.addEventListener("fim", (e) => {
   const resultado: ResultadoSimulacao = JSON.parse(e.data);
-  mostrarResumo(resultado);
+  mostrarRelatorio(resultado.relatorio); // pode vir sem `analise` (ver erro_analise)
   feed.close();                       // IMPORTANTE: senão o navegador reconecta sozinho
 });
 feed.addEventListener("erro", (e) => {
@@ -85,7 +89,7 @@ feed.addEventListener("erro", (e) => {
 });
 ```
 
-- Cada simulação real leva **~60–90 s** (10 falas). No modo demo, ~3 s.
+- Cada simulação real leva **~60–90 s** (10 falas) + **~3–10 s** do analista. No modo demo, ~3 s.
 - Quem conecta atrasado (ou recarrega a página) recebe primeiro as falas que já aconteceram.
 - Linhas `: ping` a cada 15 s mantêm a conexão viva; o `EventSource` as ignora.
 
@@ -118,8 +122,46 @@ interface ResultadoSimulacao {
   mensagens: MensagemDebate[];  // 5 da rodada 1 + 5 da rodada 2
   rodadas: number;
   provedor_principal: string;
+  tokens_usados: number;        // debate + analista
+  duracao_segundos: number;
+  relatorio: Relatorio | null;  // sempre preenchido no evento "fim"
+}
+
+// ---- Relatório (dashboard) ----
+interface Relatorio {
+  indicadores: Indicadores;      // NÚMEROS: calculados pelo código, sempre presentes
+  analise: AnaliseDebate | null; // TEXTO: escrito pela IA; null se o analista falhou
+  origem_analise: string | null;
+  erro_analise: string | null;   // mensagem amigável quando analise == null
   tokens_usados: number;
   duracao_segundos: number;
+  aviso: string;                 // mostrar na tela: opiniões sintéticas, hipóteses a validar
+}
+
+interface Indicadores {
+  preco_ofertado: number;
+  interesse_medio_r1: number;    // 0 a 10
+  interesse_medio_r2: number;
+  decisoes_r2: { sim: number; talvez: number; nao: number };
+  preco_maximo_medio: number | null; // compare com preco_ofertado (ótimo para um gráfico)
+  mudaram_de_posicao: number;
+  por_persona: {
+    persona_id: string; persona_nome: string;
+    interesse_r1: number; interesse_r2: number;
+    compraria_r1: Decisao; compraria_r2: Decisao;
+    mudou: boolean;              // critério oficial de mudança de opinião
+    preco_maximo: number | null;
+  }[];
+}
+
+interface AnaliseDebate {
+  resumo: string;
+  elogios: string[];             // com quem disse entre parênteses
+  objecoes: string[];            // da mais citada para a menos
+  fatores_de_decisao: string[];
+  pontos_de_atencao: string[];   // cada item começa com "Preço:", "Produto:", "Conveniência:" ou "Divulgação:"
+  recomendacoes: string[];       // da mais importante para a menos
+  experimentos: string[];        // testes com clientes reais
 }
 
 interface SimulacaoEstado {      // GET /simulacoes/{id}
@@ -132,16 +174,15 @@ interface SimulacaoEstado {      // GET /simulacoes/{id}
 }
 ```
 
-**Mudou de opinião?** O critério oficial (o mesmo do backend) é: a decisão `compraria` mudou entre a rodada 1 e a 2 **ou** o `interesse` variou 2 pontos ou mais. Compare as duas falas da mesma `persona_id`.
+**Mudou de opinião?** Use `relatorio.indicadores.por_persona[].mudou` (critério oficial: a decisão mudou **ou** o interesse variou 2+ pontos). Não use `opiniao.mudou_de_opiniao`, que é só o que a IA declarou.
 
 ## Dados de exemplo
 
-[`docs/exemplos/resultado-simulacao.json`](exemplos/resultado-simulacao.json) — uma simulação **real** (barbearia, gpt-oss-120b), no formato `ResultadoSimulacao`. Bom para montar as telas sem subir a API.
+[`docs/exemplos/resultado-simulacao.json`](exemplos/resultado-simulacao.json) — uma simulação **real** (barbearia, gpt-oss-120b), no formato `ResultadoSimulacao`, **com o relatório do analista**. Bom para montar as telas sem subir a API.
 
 ## Ainda não existe (vai entrar na API depois)
 
-- **Relatório do analista** (resumo, objeções, recomendações, experimentos) — vai aparecer dentro de `resultado`.
-- **Indicadores financeiros** (margem, ponto de equilíbrio) — calculados a partir de `custos`.
+- **Indicadores financeiros** (margem, ponto de equilíbrio) — calculados a partir de `custos`; vão entrar dentro de `relatorio`.
 - **Histórico salvo**: hoje as simulações ficam em memória; se o servidor reiniciar, somem.
 
 ## Lembrete de linguagem (vale para a interface)

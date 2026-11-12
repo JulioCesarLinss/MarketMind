@@ -47,7 +47,11 @@ def test_simulacao_demo_completa(client):
     mensagens = [json.loads(d) for t, d in eventos if t == "mensagem"]
     assert len(mensagens) == 2 * len(PERSONAS)
     assert eventos[-1][0] == "fim"
-    assert json.loads(eventos[-1][1])["rodadas"] == 2
+    assert eventos[-2] == ("etapa", '{"etapa": "analise"}')  # aviso antes do relatório
+    final = json.loads(eventos[-1][1])
+    assert final["rodadas"] == 2
+    assert final["relatorio"]["analise"]["recomendacoes"]
+    assert final["relatorio"]["indicadores"]["preco_ofertado"] == NEGOCIOS["barbearia"]["preco"]
 
     estado = client.get(f"/simulacoes/{id_}").json()
     assert estado["status"] == "concluida"
