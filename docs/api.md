@@ -19,8 +19,9 @@ O CORS já libera `http://localhost:5173` (porta padrão do Vite).
 
 ```
 1. POST /simulacoes?demo=true   (dados do formulário)  →  { "id": "bc7327ef54ca", "status": "rodando" }
-2. GET  /simulacoes/{id}/stream  →  feed ao vivo: uma fala por evento, o aviso "etapa" (analista escrevendo)
-                                    e por fim o evento "fim" com o resultado + relatório
+2. GET  /simulacoes/{id}/stream  →  feed ao vivo, nesta ordem:
+       etapa {"etapa":"pesquisa"} → pesquisa (referência de mercado) → mensagem × 10
+       → etapa {"etapa":"analise"} → fim (resultado + relatório + pesquisa)
 3. GET  /simulacoes/{id}         →  tudo de uma vez (ex.: ao recarregar a página)
 ```
 
@@ -175,6 +176,31 @@ interface SimulacaoEstado {      // GET /simulacoes/{id}
 ```
 
 **Mudou de opinião?** Use `relatorio.indicadores.por_persona[].mudou` (critério oficial: a decisão mudou **ou** o interesse variou 2+ pontos). Não use `opiniao.mudou_de_opiniao`, que é só o que a IA declarou.
+
+## Pesquisa de mercado (agente pesquisador)
+
+Antes da primeira fala, o backend pesquisa o mercado e envia o evento `pesquisa` (também fica em `resultado.pesquisa`).
+Leva ~20–40 s numa simulação real (no modo demo, 0,5 s, com números fictícios avisados em `aviso`).
+
+```ts
+fonte.addEventListener('etapa', (e) => {
+  const { etapa } = JSON.parse(e.data) // 'pesquisa' | 'analise'
+})
+fonte.addEventListener('pesquisa', (e) => {
+  const pesquisa: PesquisaMercado = JSON.parse(e.data)
+})
+```
+
+Campos principais de `PesquisaMercado` (tipos completos em `frontend/src/types.ts`):
+- `faixas[]`: `popular`, `intermediaria`, `premium`, cada uma com `media`, `desvio_padrao`, `minimo`, `maximo`, `quantidade`,
+  `dados_suficientes` e `exemplos[]` (estabelecimento, item, preço, link da fonte).
+- `media_geral`, `desvio_padrao_geral`, `total_precos`.
+- `posicao`: `preco_usuario`, `desvios_da_media`, `faixa_mais_proxima` e `resumo` (frase pronta).
+- `lojas_regiao`: `quantidade` (mínimo mapeado), `nivel_concorrencia` (`baixa` | `media` | `alta` | `nenhum concorrente mapeado` |
+  `indeterminado`), `observacao`, `erro`.
+- `fontes[]` (título + URL), `erro` (por que os preços falharam; a simulação continua), `aviso` (mostrar na tela).
+
+Exemplo real: [`docs/exemplos/pesquisa-mercado.json`](exemplos/pesquisa-mercado.json).
 
 ## Dados de exemplo
 

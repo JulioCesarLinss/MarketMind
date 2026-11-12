@@ -5,7 +5,7 @@ Perfis bem diferentes entre si, para conferir que as personas não ficam presas 
 
 NEGOCIO_EXEMPLO = {
     "tipo": "Cafeteria com delivery",
-    "localizacao": "Bairro residencial de cidade média",
+    "localizacao": "Espinheiro, Recife - PE",
     "produto": "Café especial e salgados artesanais",
     "preco": 18.0,
     "publico": "Adultos que trabalham em casa",
@@ -19,7 +19,7 @@ NEGOCIOS: dict[str, dict] = {
     "cafeteria": NEGOCIO_EXEMPLO,
     "barbearia": {
         "tipo": "Barbearia premium",
-        "localizacao": "Centro comercial de capital",
+        "localizacao": "Boa Viagem, Recife - PE",
         "produto": "Corte + barba com toalha quente e cerveja artesanal de cortesia",
         "preco": 85.0,
         "publico": "Homens de 25 a 45 anos que trabalham em escritório",
@@ -31,7 +31,7 @@ NEGOCIOS: dict[str, dict] = {
     },
     "roupas": {
         "tipo": "Loja de roupas de bairro",
-        "localizacao": "Rua comercial de bairro popular",
+        "localizacao": "Afogados, Recife - PE",
         "produto": "Roupas femininas casuais de marcas nacionais",
         "preco": 79.9,
         "publico": "Mulheres de 20 a 50 anos do próprio bairro",
@@ -43,7 +43,7 @@ NEGOCIOS: dict[str, dict] = {
     },
     "marmita": {
         "tipo": "Marmitaria fitness",
-        "localizacao": "Próximo a academias e faculdade",
+        "localizacao": "Graças, Recife - PE",
         "produto": "Marmitas congeladas com calorias e macronutrientes informados",
         "preco": 26.0,
         "publico": "Frequentadores de academia e estudantes",

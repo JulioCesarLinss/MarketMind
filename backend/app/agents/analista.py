@@ -31,6 +31,7 @@ Regras:
 - Baseie-se SOMENTE no debate e nos dados. Cada elogio e objeção deve indicar entre parênteses quem disse (ex.: "(Econômico, Crítico)").
 - Os números já estão calculados: use-os como estão. Não recalcule nem invente números, percentuais ou estatísticas.
 - Priorize o que apareceu em mais de uma persona e o que fez alguém mudar de opinião.
+- Se houver referência de mercado, compare o preço da oferta com as faixas (popular, intermediária, premium) e com o nível de concorrência na região, deixando claro que são valores aproximados da internet.
 - Recomendações: concretas, baratas e viáveis para um pequeno negócio DESTE ramo, cada uma ligada a uma objeção. Aproveite as boas sugestões que as próprias personas deram ao dono.
 - Experimentos: testes rápidos com clientes reais, dizendo o que fazer e o que medir (ex.: "oferecer X para os 20 primeiros clientes e contar quantos voltam em 30 dias").
 - Linguagem responsável: fale em "interesse simulado" e "hipóteses a validar". NUNCA fale em chance de sucesso, garantia ou previsão de vendas.
@@ -103,7 +104,7 @@ def montar_pedido(negocio: dict, resultado: ResultadoSimulacao, indicadores: Ind
         for n in range(1, resultado.rodadas + 1)
     )
     return (
-        f"{formatar_negocio(negocio)}\n\n"
+        f"{formatar_negocio(negocio, resultado.pesquisa)}\n\n"
         f"# Debate entre os consumidores sintéticos\n{rodadas}\n\n"
         f"# Indicadores (já calculados, use como estão)\n{_formatar_indicadores(indicadores)}\n\n"
         "Escreva o relatório para o empreendedor."

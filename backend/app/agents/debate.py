@@ -6,10 +6,10 @@ from app.agents.contexto import formatar_negocio
 from app.models.schemas import MensagemDebate
 
 
-def pedido_rodada_1(negocio: dict) -> str:
+def pedido_rodada_1(negocio: dict, pesquisa=None) -> str:
     return (
         "RODADA 1 — avaliação individual.\n\n"
-        f"{formatar_negocio(negocio)}\n\n"
+        f"{formatar_negocio(negocio, pesquisa)}\n\n"
         "Avalie esta oferta a partir do seu perfil. Você ainda não ouviu nenhum outro consumidor."
     )
 

@@ -39,6 +39,14 @@ class Settings:
     gemini_api_key: str = _env("GEMINI_API_KEY")
     ollama_base_url: str = _env("OLLAMA_BASE_URL", "http://localhost:11434/v1")
 
+    # Pesquisa de mercado na internet (agente pesquisador)
+    pesquisa_mercado: bool = _env("PESQUISA_MERCADO", "true").lower() in ("1", "true", "sim")
+    busca_provider: str = _env("BUSCA_PROVIDER", "tavily").lower()  # tavily | ollama
+    busca_reserva: str = _env("BUSCA_RESERVA").lower()  # opcional: usada se a principal falhar
+    tavily_api_key: str = _env("TAVILY_API_KEY")
+    ollama_api_key: str = _env("OLLAMA_API_KEY")  # busca do Ollama exige créditos pagos
+    mapa_raio_metros: int = int(_env("MAPA_RAIO_METROS", "2000") or 2000)
+
     # Endereços do frontend liberados no CORS (separe vários por vírgula)
     frontend_url: str = _env("FRONTEND_URL", "http://localhost:5173")
 

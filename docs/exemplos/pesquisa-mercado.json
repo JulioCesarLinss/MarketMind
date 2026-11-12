@@ -1,0 +1,132 @@
+{
+  "consultas": [
+    "barbearia Recife preço corte e barba",
+    "barbearia Recife barato popular preço corte e barba",
+    "barbearia Recife premium preço corte e barba"
+  ],
+  "faixas": [
+    {
+      "faixa": "popular",
+      "quantidade": 2,
+      "media": 51.5,
+      "desvio_padrao": 1.5,
+      "minimo": 50.0,
+      "maximo": 53.0,
+      "dados_suficientes": true,
+      "exemplos": [
+        {
+          "faixa": "popular",
+          "estabelecimento": "Barbearia_joaomals",
+          "item": "Cabelo+barba",
+          "preco": 50.0,
+          "fonte_url": "https://booksy.com/pt-br/s/barbearias/646966_recife"
+        },
+        {
+          "faixa": "popular",
+          "estabelecimento": "Barbearia_reguamaxima",
+          "item": "Corte navalhado + barba + sobrancelhas",
+          "preco": 53.0,
+          "fonte_url": "https://booksy.com/pt-br/s/barbearias/646966_recife"
+        }
+      ]
+    },
+    {
+      "faixa": "intermediaria",
+      "quantidade": 3,
+      "media": 100.0,
+      "desvio_padrao": 12.25,
+      "minimo": 85.0,
+      "maximo": 115.0,
+      "dados_suficientes": true,
+      "exemplos": [
+        {
+          "faixa": "intermediaria",
+          "estabelecimento": "Prosa Barbearia",
+          "item": "Corte Social + Barba Premium",
+          "preco": 85.0,
+          "fonte_url": "https://booksy.com/pt-br/s/barbearias/646966_recife"
+        },
+        {
+          "faixa": "intermediaria",
+          "estabelecimento": "B king barbershop",
+          "item": "Combo (Cabelo E barba)",
+          "preco": 100.0,
+          "fonte_url": "https://booksy.com/pt-br/s/barbearias/646966_recife"
+        },
+        {
+          "faixa": "intermediaria",
+          "estabelecimento": "Baffi Barbearia",
+          "item": "CORTE + BARBA",
+          "preco": 115.0,
+          "fonte_url": "https://baffibarbearia.com.br"
+        }
+      ]
+    },
+    {
+      "faixa": "premium",
+      "quantidade": 2,
+      "media": 130.0,
+      "desvio_padrao": 10.0,
+      "minimo": 120.0,
+      "maximo": 140.0,
+      "dados_suficientes": true,
+      "exemplos": [
+        {
+          "faixa": "premium",
+          "estabelecimento": "BARBEARIA SAVOIE",
+          "item": "CORTE + BARBA PREMIUM",
+          "preco": 120.0,
+          "fonte_url": "https://booksy.com/pt-br/s/barbearias/646966_recife"
+        },
+        {
+          "faixa": "premium",
+          "estabelecimento": "Trois Barbearia",
+          "item": "Cabelo e barba",
+          "preco": 140.0,
+          "fonte_url": "https://riomarrecife.com.br/novidades/trois-barbearia-esta-de-cara-nova-e-em-novo-local-no-riomar"
+        }
+      ]
+    }
+  ],
+  "total_precos": 7,
+  "media_geral": 94.71,
+  "desvio_padrao_geral": 31.54,
+  "posicao": {
+    "preco_usuario": 85.0,
+    "media_mercado": 94.71,
+    "desvio_padrao_mercado": 31.54,
+    "desvios_da_media": -0.31,
+    "faixa_mais_proxima": "intermediaria",
+    "resumo": "Seu preço (R$ 85,00) está 10% abaixo da média encontrada (R$ 94,71), 0,3 desvio-padrão abaixo; o mais próximo é a faixa intermediária."
+  },
+  "lojas_regiao": {
+    "quantidade": 2,
+    "raio_metros": 2000,
+    "categoria": "barbearia_salao",
+    "nivel_concorrencia": "indeterminado",
+    "nomes": [],
+    "fonte": "OpenStreetMap (Nominatim, busca por nome)",
+    "erro": null,
+    "observacao": "Contagem parcial: o serviço principal do mapa estava indisponível e a busca por nome encontra bem menos lojas que o real. Não use este número para medir a concorrência."
+  },
+  "fontes": [
+    {
+      "titulo": "Barbearia em Recife - perto de mim - Cabeleireiro masculino, Barba - Top 20 em Booksy.com",
+      "url": "https://booksy.com/pt-br/s/barbearias/646966_recife"
+    },
+    {
+      "titulo": "RioMar Recife | Trois Barbearia está de cara nova e em novo local no RioMar",
+      "url": "https://riomarrecife.com.br/novidades/trois-barbearia-esta-de-cara-nova-e-em-novo-local-no-riomar"
+    },
+    {
+      "titulo": "Baffi Barbearia – Cuidado e Estilo Premium no Recife",
+      "url": "https://baffibarbearia.com.br"
+    }
+  ],
+  "provedor_busca": "tavily",
+  "tokens_usados": 7415,
+  "duracao_segundos": 21.1,
+  "gerada_em": "2026-11-12T22:14:02+00:00",
+  "erro": null,
+  "aviso": "Referência automática obtida na internet e no OpenStreetMap: valores aproximados e possivelmente incompletos. Confira as fontes antes de decidir."
+}

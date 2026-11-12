@@ -294,6 +294,57 @@ a { color: inherit; text-decoration: none; }
 .price-below .price-meter span { background: #d98d8d; }
 .price-ok > strong { color: #42916f; }
 
+/* ---- Mercado na região (agente pesquisador) ---- */
+.market-strip { margin-top: 14px; padding: 13px 16px; border: 1px solid #e4e0fb; border-radius: 10px; background: #fbfaff; }
+.market-strip-label { color: #8a82d9; font: 500 8px 'DM Mono', monospace; letter-spacing: .8px; }
+.market-strip p { margin: 5px 0 0; color: #6f7384; font-size: 11px; line-height: 1.6; }
+.market-strip strong { color: #4f5366; }
+.market-section { margin-top: 58px; }
+.market-top { display: grid; grid-template-columns: 1.6fr 1fr; gap: 14px; }
+.market-card { padding: 18px 20px; border: 1px solid #e8e9f0; border-radius: 11px; background: #fff; }
+.market-card > span:first-child { display: block; color: #a0a3b0; font: 500 8px 'DM Mono', monospace; letter-spacing: .8px; }
+.market-card > strong { display: block; margin-top: 11px; color: #45495b; font: 750 25px 'Manrope', sans-serif; letter-spacing: -.8px; }
+.market-card > strong small { color: #a2a5b1; font: 500 11px 'DM Sans', sans-serif; letter-spacing: 0; }
+.market-position { border-color: #e4e0fb; background: linear-gradient(150deg, #fff, #f8f7ff); }
+.market-position > p { margin: 9px 0 0; color: #5d6173; font-size: 11px; line-height: 1.65; }
+.market-meta { margin: 8px 0 0; color: #a0a4b0; font-size: 9px; line-height: 1.6; }
+.market-empty { margin: 12px 0 0; color: #8a8ea0; font-size: 11px; line-height: 1.6; }
+.market-unknown { color: #b6b9c4 !important; }
+.nivel-pill { display: inline-block; margin-top: 9px; padding: 3px 9px; border-radius: 20px; font: 500 8px 'DM Mono', monospace; letter-spacing: .5px; text-transform: uppercase; }
+.nivel-baixo { background: #eaf6f0; color: #42916f; }
+.nivel-medio { background: #fdf6e8; color: #b98a35; }
+.nivel-alto { background: #fff0ed; color: #b9796b; }
+.nivel-indeterminado { background: #f0f1f5; color: #8a8ea0; }
+.price-ruler { margin-top: 14px; padding: 30px 20px 14px; border: 1px solid #e8e9f0; border-radius: 11px; background: #fff; }
+.ruler-body { position: relative; }
+.ruler-row { display: grid; grid-template-columns: 84px 1fr; align-items: center; height: 30px; }
+.ruler-label { color: #8a8ea0; font: 500 9px 'DM Mono', monospace; letter-spacing: .4px; }
+.ruler-track { position: relative; height: 8px; border-radius: 10px; background: #f3f4f8; }
+.ruler-range { position: absolute; top: 0; height: 100%; border-radius: 10px; opacity: .55; }
+.ruler-mean { position: absolute; top: 50%; width: 12px; height: 12px; border: 2px solid #fff; border-radius: 50%; transform: translate(-50%, -50%); box-shadow: 0 1px 4px rgba(32, 36, 49, .2); }
+.ruler-nodata { position: absolute; left: 8px; top: -3px; color: #b6b9c4; font-size: 9px; }
+.faixa-popular.ruler-range, .faixa-popular.ruler-mean { background: #5bb28e; }
+.faixa-intermediaria.ruler-range, .faixa-intermediaria.ruler-mean { background: #e4bb6e; }
+.faixa-premium.ruler-range, .faixa-premium.ruler-mean { background: #8177df; }
+.ruler-user { position: absolute; top: -8px; bottom: 4px; width: 0; border-left: 2px dashed #bf7070; }
+.ruler-user span { position: absolute; top: -14px; left: 6px; padding: 2px 6px; border-radius: 6px; background: #fff0ed; color: #b9796b; font: 600 8px 'DM Mono', monospace; line-height: 1.4; white-space: nowrap; }
+.tiers-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 14px; }
+.tier-card { padding: 16px 17px; border: 1px solid #e8e9f0; border-top-width: 3px; border-radius: 11px; background: #fff; }
+.tier-card.faixa-popular { border-top-color: #5bb28e; }
+.tier-card.faixa-intermediaria { border-top-color: #e4bb6e; }
+.tier-card.faixa-premium { border-top-color: #8177df; }
+.tier-name { color: #a0a3b0; font: 500 8px 'DM Mono', monospace; letter-spacing: .8px; }
+.tier-card > strong { display: block; margin-top: 8px; color: #45495b; font: 750 21px 'Manrope', sans-serif; }
+.tier-stats { margin: 4px 0 0; color: #a0a4b0; font-size: 9px; }
+.tier-warning { margin: 8px 0 0; color: #b98a35; font-size: 9px; }
+.tier-card ul { display: flex; flex-direction: column; gap: 7px; margin: 12px 0 0; padding: 0; list-style: none; color: #777c8b; font-size: 9.5px; line-height: 1.5; }
+.tier-card li span { color: #555a6a; font-weight: 600; }
+.market-sources { margin-top: 14px; padding: 14px 17px; border: 1px solid #e8e9f0; border-radius: 11px; background: #fff; }
+.market-sources > span { color: #a0a3b0; font: 500 8px 'DM Mono', monospace; letter-spacing: .8px; }
+.market-sources ul { margin: 8px 0 0; padding: 0 0 0 16px; font-size: 10px; line-height: 1.8; }
+.market-sources a { color: #6859d9; text-decoration: underline; text-underline-offset: 2px; word-break: break-word; }
+.market-disclaimer { margin: 10px 0 0; color: #a0a4b0; font-size: 9px; line-height: 1.6; }
+
 /* ---- Relatório do agente analista ---- */
 .report-section { margin-top: 58px; }
 .report-summary { padding: 22px 24px; border: 1px solid #e4e0fb; border-radius: 11px; background: linear-gradient(150deg, #fff, #f8f7ff); }
@@ -391,6 +442,9 @@ a { color: inherit; text-decoration: none; }
   .summary-highlight > strong { font-size: 27px; }
   .insights-grid { grid-template-columns: 1fr; }
   .report-grid { grid-template-columns: 1fr; }
+  .market-section { margin-top: 43px; }
+  .market-top, .tiers-grid { grid-template-columns: 1fr; }
+  .price-ruler { padding: 30px 12px 12px; }
   .report-section { margin-top: 43px; }
   .report-summary p { font-size: 12px; }
   .decision-overview { padding: 15px 13px; gap: 8px; }

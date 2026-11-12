@@ -38,7 +38,10 @@ O empreendedor preenche um formulário com:
 Usuário preenche o formulário
         │
         ▼
-Agente de contexto ──► organiza dados do negócio + concorrentes, identificando a origem de cada dado
+Agente pesquisador ──► busca na internet preços de negócios parecidos na região (faixas popular,
+        │                  intermediária e premium: média e desvio-padrão) e conta lojas do ramo no mapa
+        ▼
+Agente de contexto ──► organiza dados do negócio + concorrentes + referência de mercado, identificando a origem de cada dado
         │
         ▼
 Consumidores sintéticos (5 personas, cada um com prompt e memória próprios)
@@ -61,7 +64,8 @@ Interface: feed do debate em tempo real + relatório final
 
 | Componente | Responsabilidade | Usa IA? |
 |---|---|---|
-| Agente de contexto | Padroniza as informações do negócio e dos concorrentes | Não (MVP) |
+| Agente pesquisador | Busca preços na internet (Tavily) e conta lojas do ramo no OpenStreetMap; calcula média, desvio-padrão e a posição do preço | Sim (planeja a busca e lê os preços; os números são calculados pelo código) |
+| Agente de contexto | Padroniza as informações do negócio, dos concorrentes e da referência de mercado | Não |
 | Personas | Avaliam a oferta segundo prioridades próprias (preço, qualidade, conveniência, diferenciação, proximidade) | Sim |
 | Moderador / orquestrador | Coordena rodadas e chamadas em paralelo, mantém o histórico | Não |
 | Agente analista | Gera o relatório a partir do histórico real do debate | Sim |
@@ -87,7 +91,7 @@ ponto de equilíbrio        = custo fixo mensal ÷ margem de contribuição
 
 - As opiniões são **sintéticas**: não representam uma amostra estatística de consumidores reais.
 - O sistema separa **dados informados pelo usuário**, **dados de concorrentes** e **opiniões geradas por IA**.
-- Não há monitoramento automático de mercado: concorrentes são cadastrados manualmente.
+- A referência de mercado é automática e **aproximada**: preços achados na internet (com links das fontes) e lojas mapeadas no OpenStreetMap (que não tem todas as lojas pequenas). Os concorrentes digitados pelo usuário aparecem separados.
 - Não apresentamos "chance de sucesso" nem previsão de vendas — apenas **hipóteses a validar**.
 - O cálculo financeiro é simplificado e depende dos custos informados.
 

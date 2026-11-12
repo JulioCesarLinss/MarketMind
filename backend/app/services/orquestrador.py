@@ -18,6 +18,7 @@ from app.agents.debate import pedido_rodada_1, pedido_rodada_2
 from app.agents.personas import PERSONAS, Persona
 from app.config import settings
 from app.llm.base import LLMProvider, Mensagens
+from app.models.pesquisa import PesquisaMercado
 from app.models.schemas import MensagemDebate, Opiniao, ResultadoSimulacao
 
 # Função chamada a cada fala pronta (o script imprime; a API vai enviar ao feed ao vivo)
@@ -42,11 +43,11 @@ class Orquestrador:
         # Memória curta: histórico de conversa de cada persona, só durante esta simulação
         self.memoria: dict[str, Mensagens] = {p.id: [] for p in self.personas}
 
-    async def executar(self, negocio: dict) -> ResultadoSimulacao:
+    async def executar(self, negocio: dict, pesquisa: PesquisaMercado | None = None) -> ResultadoSimulacao:
         inicio = time.perf_counter()
         tokens_antes = self.provider.total_tokens()
 
-        rodada_1 = await self._rodada(1, lambda persona: pedido_rodada_1(negocio))
+        rodada_1 = await self._rodada(1, lambda persona: pedido_rodada_1(negocio, pesquisa))
         rodada_2 = await self._rodada(
             2, lambda persona: pedido_rodada_2([m for m in rodada_1 if m.persona_id != persona.id], self.rng)
         )
@@ -54,6 +55,7 @@ class Orquestrador:
         return ResultadoSimulacao(
             mensagens=rodada_1 + rodada_2,
             rodadas=2,
+            pesquisa=pesquisa,
             provedor_principal=self._nome_principal(),
             tokens_usados=self.provider.total_tokens() - tokens_antes,
             duracao_segundos=round(time.perf_counter() - inicio, 1),

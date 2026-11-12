@@ -3,7 +3,7 @@ import HomePage from './pages/HomePage'
 import DebatePage from './pages/DebatePage'
 import ResultPage from './pages/ResultPage'
 import { buscarPersonas, conectarFeed, criarSimulacao } from './services/api'
-import type { MensagemDebate, NegocioPayload, PersonaPublica, ResultadoSimulacao } from './types'
+import type { MensagemDebate, NegocioPayload, PersonaPublica, PesquisaMercado, ResultadoSimulacao } from './types'
 
 type Tela = 'inicio' | 'debate' | 'resultado'
 
@@ -12,6 +12,7 @@ export default function App() {
   const [personas, setPersonas] = useState<PersonaPublica[]>([])
   const [mensagens, setMensagens] = useState<MensagemDebate[]>([])
   const [resultado, setResultado] = useState<ResultadoSimulacao | null>(null)
+  const [pesquisa, setPesquisa] = useState<PesquisaMercado | null>(null)
   const [carregando, setCarregando] = useState(false)
   const [erroFormulario, setErroFormulario] = useState('')
   const [erroFeed, setErroFeed] = useState('')
@@ -35,6 +36,7 @@ export default function App() {
     setErroFeed('')
     setMensagens([])
     setResultado(null)
+    setPesquisa(null)
     setRodadaAtual(1)
     setStatusTexto('Iniciando os cinco agentes...')
     fonteRef.current?.close()
@@ -54,6 +56,13 @@ export default function App() {
           } else {
             setStatusTexto('As primeiras avaliações estão chegando...')
           }
+        },
+        aoIniciarPesquisa: () => {
+          setStatusTexto('O pesquisador está buscando preços e lojas parecidas na região...')
+        },
+        aoReceberPesquisa: (pesquisaRecebida) => {
+          setPesquisa(pesquisaRecebida)
+          setStatusTexto('Pesquisa de mercado concluída. Os agentes estão lendo as informações do produto...')
         },
         aoIniciarAnalise: () => {
           setRodadaAtual(2)
@@ -88,6 +97,7 @@ export default function App() {
     setTela('inicio')
     setMensagens([])
     setResultado(null)
+    setPesquisa(null)
     setErroFeed('')
     setErroFormulario('')
     setRodadaAtual(1)
@@ -104,6 +114,7 @@ export default function App() {
         personas={personas}
         mensagens={mensagens}
         rodadaAtual={rodadaAtual}
+        pesquisa={pesquisa}
         statusTexto={statusTexto}
         erro={erroFeed}
         onVoltar={novaAvaliacao}

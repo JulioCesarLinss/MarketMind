@@ -15,11 +15,14 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from app.agents.personas import PERSONAS
+from app.agents.pesquisador import Pesquisador
+from app.config import settings
 from app.llm import criar_provider
 from app.llm.factory import ConfiguracaoLLMError
 from app.models.negocio import NegocioEntrada
 from app.models.schemas import MensagemDebate, ResultadoSimulacao
-from app.services.simulacoes import Evento, Simulacao, gerenciador
+from app.services.busca import criar_busca
+from app.services.simulacoes import Evento, PesquisadorDemo, Simulacao, gerenciador
 
 router = APIRouter()
 
@@ -68,8 +71,29 @@ async def criar_simulacao(
         analista = criar_provider("mock") if demo else criar_provider(papel="analista", mock_no_fim=False)
     except ConfiguracaoLLMError:
         analista = None  # o resultado vem só com os números do relatório
-    sim = gerenciador.iniciar(negocio.model_dump(), provider, analista)
+    pesquisador = PesquisadorDemo() if demo else _pesquisador_real()
+    sim = gerenciador.iniciar(negocio.model_dump(), provider, analista, pesquisador)
     return SimulacaoCriada(id=sim.id, status=sim.status)
+
+
+_PESQUISADOR: Pesquisador | None = None
+
+
+def _pesquisador_real() -> Pesquisador | None:
+    """Um pesquisador só para o servidor todo (mantém o cache de 24 h entre simulações)."""
+    global _PESQUISADOR
+    if not settings.pesquisa_mercado:
+        return None
+    if _PESQUISADOR is None:
+        try:
+            _PESQUISADOR = Pesquisador(
+                ia_rapida=criar_provider(papel="personas", mock_no_fim=False),
+                ia_extracao=criar_provider(papel="analista", mock_no_fim=False),
+                busca=criar_busca(),
+            )
+        except ConfiguracaoLLMError:
+            return None  # sem IA configurada não há como pesquisar; a simulação segue sem referência
+    return _PESQUISADOR
 
 
 def _buscar(id_: str) -> Simulacao:
@@ -93,6 +117,8 @@ def _sse(evento: Evento) -> str:
 @router.get("/simulacoes/{id_}/stream", tags=["simulacoes"])
 async def acompanhar_simulacao(id_: str):
     """Feed ao vivo (SSE). Eventos:
+    - `etapa`: {"etapa": "pesquisa"} no início, enquanto o agente pesquisador busca preços e lojas
+    - `pesquisa`: a referência de mercado (PesquisaMercado), antes da primeira fala
     - `mensagem`: uma fala (MensagemDebate)
     - `etapa`: {"etapa": "analise"} quando o debate acaba e o analista começa a escrever o relatório
     - `fim`: resultado completo (ResultadoSimulacao, com `relatorio`); depois a conexão fecha

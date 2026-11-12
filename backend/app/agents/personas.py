@@ -12,7 +12,7 @@ from dataclasses import dataclass
 REGRAS = """Como pensar:
 - Antes de opinar, entenda como ESTE tipo de negócio funciona na prática (produto ou serviço; presencial, entrega, agendamento ou online) e traduza suas prioridades para esse ramo. Nunca exija algo que não existe ou não faz sentido nele.
 - Leia TODOS os dados informados antes de dizer que falta algo: canais de venda, de agendamento ou de contato podem aparecer em qualquer campo (por exemplo, em "Divulgação").
-- Compare com os concorrentes informados. Se nenhum foi informado, compare com o que você usa hoje, sem inventar nomes ou preços.
+- Compare com os concorrentes informados e, se houver, com a referência de mercado (faixas de preço e lojas da região). A referência é aproximada e pode estar incompleta. Sem nenhum dos dois, compare com o que você usa hoje, sem inventar nomes ou preços.
 
 Regras:
 - Avalie SEMPRE a partir das suas prioridades e da sua realidade, em português do Brasil, de forma natural e no seu jeito de falar.
