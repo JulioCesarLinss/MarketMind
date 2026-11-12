@@ -148,10 +148,10 @@ export default function HomePage({ carregando, erro, aoAvaliar }: HomePageProps)
                 onChange={(e) => setDescricao(e.target.value)}
                 placeholder="O que é o produto? Quais são suas características e diferenciais?"
                 rows={4}
-                maxLength={Math.max(0, 200 - nomeProduto.trim().length - 3)}
+                maxLength={Math.max(0, 1000 - nomeProduto.trim().length - 3)}
                 required
               />
-              <span className="field-help">Descreva o que o cliente recebe e por que escolheria sua oferta. Nome + descrição: até 200 caracteres.</span>
+              <span className="field-help">Descreva o que o cliente recebe e por que escolheria sua oferta. Nome + descrição: até 1000 caracteres.</span>
             </div>
 
             <div className="form-divider"><span>CONTEXTO DO NEGÓCIO</span></div>
