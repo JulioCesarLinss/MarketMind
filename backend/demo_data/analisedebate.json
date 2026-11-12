@@ -1,0 +1,32 @@
+{
+  "resumo": "A oferta despertou curiosidade, mas o interesse simulado ficou baixo: a maioria achou o preço alto para o que é entregue hoje e sentiu falta de algo que comprove a qualidade. A praticidade para comprar foi o ponto mais elogiado. Os consumidores indicaram caminhos claros para reconsiderar, principalmente uma forma de experimentar pagando menos.",
+  "elogios": [
+    "Praticidade para comprar (Ocupado, Econômico)",
+    "Proposta diferente do que os concorrentes oferecem (Crítico)"
+  ],
+  "objecoes": [
+    "Preço alto para experimentar pela primeira vez (Econômico, Crítico, Fiel à Região)",
+    "Falta de prova de qualidade, como avaliações de clientes (Exigente, Crítico)",
+    "Pouco vínculo com a comunidade local (Fiel à Região)"
+  ],
+  "fatores_de_decisao": [
+    "Diferença de preço em relação ao concorrente mais barato",
+    "Confiança na qualidade antes da primeira compra",
+    "Facilidade para comprar"
+  ],
+  "pontos_de_atencao": [
+    "Preço: está acima do que a maioria disse que pagaria",
+    "Produto: o diferencial não fica claro na descrição",
+    "Divulgação: faltam avaliações e indicações de clientes reais"
+  ],
+  "recomendacoes": [
+    "Criar uma oferta de primeira compra com desconto para reduzir o risco de experimentar",
+    "Mostrar avaliações e fotos de clientes reais nos canais de divulgação",
+    "Deixar explícito na divulgação o que diferencia a oferta dos concorrentes",
+    "Aproximar-se da vizinhança com ações locais, como parcerias com comércios próximos"
+  ],
+  "experimentos": [
+    "Oferecer o desconto de primeira compra para os 20 primeiros clientes e medir quantos voltam a comprar em 30 dias",
+    "Publicar duas versões do anúncio (uma com foco em preço, outra em qualidade) e comparar quantas pessoas pedem informações"
+  ]
+}

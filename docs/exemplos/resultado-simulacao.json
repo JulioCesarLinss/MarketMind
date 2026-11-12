@@ -1,0 +1,361 @@
+{
+  "mensagens": [
+    {
+      "persona_id": "economico",
+      "persona_nome": "Consumidor Econômico",
+      "rodada": 1,
+      "opiniao": {
+        "fala": "Olha, R$85 pra cortar cabelo, fazer a barba, ainda ganhar uma cerveja parece barato só se eu fosse gastar muito mais, mas já pago R$35 na barbearia da rua e dá o básico. A concorrência de shopping sai R$70 e tem ambiente legal, então 85 me parece caro sem um benefício claro. Só aceitaria se a experiência fosse muito melhor e compensasse o gasto extra.",
+        "interesse": 3,
+        "compraria": "nao",
+        "pontos_positivos": [
+          "Cerveja artesanal de cortesia",
+          "Toalha quente",
+          "Ambiente premium"
+        ],
+        "objecoes": [
+          "Preço R$85 muito acima da minha realidade (costumo até R$35)",
+          "Benefício da cerveja não compensa o valor extra",
+          "Não há desconto ou pacote que reduza o custo"
+        ],
+        "mudou_de_opiniao": false,
+        "preco_maximo": null,
+        "o_que_mudaria": "Reduzir o preço para até R$60 ou oferecer um pacote mensal com desconto que torne o custo-benefício competitivo"
+      },
+      "origem": "groq/openai/gpt-oss-120b",
+      "duracao_segundos": 1.7
+    },
+    {
+      "persona_id": "exigente",
+      "persona_nome": "Consumidor Exigente",
+      "rodada": 1,
+      "opiniao": {
+        "fala": "O conceito parece bem premium, gostei da toalha quente e da cerveja artesanal como diferencial, mas R$85 é bem acima da média da concorrência e não vejo nenhum selo de qualidade ou avaliações que justifiquem esse valor. Se houver garantia de satisfação e prova de que os barbeiros são realmente experientes, eu consideraria.",
+        "interesse": 5,
+        "compraria": "talvez",
+        "pontos_positivos": [
+          "Experiência premium com toalha quente",
+          "Cerveja artesanal de cortesia",
+          "Local no centro comercial, fácil acesso"
+        ],
+        "objecoes": [
+          "Preço muito acima dos concorrentes (R$35 e R$70)",
+          "Falta de avaliações reais ou certificação de qualidade",
+          "Nenhuma garantia de resultado"
+        ],
+        "mudou_de_opiniao": false,
+        "preco_maximo": 70.0,
+        "o_que_mudaria": "Apresentar avaliações verificáveis de clientes e oferecer garantia de satisfação ou retoque gratuito caso o corte não agrade"
+      },
+      "origem": "groq/openai/gpt-oss-120b",
+      "duracao_segundos": 1.7
+    },
+    {
+      "persona_id": "ocupado",
+      "persona_nome": "Consumidor Ocupado",
+      "rodada": 1,
+      "opiniao": {
+        "fala": "O app pra marcar o corte parece prático, mas R$85 é caro pra mim, ainda mais com a concorrência a R$70 no shopping. Se fosse mais barato eu fecharia rápido, mas assim fico em dúvida.",
+        "interesse": 5,
+        "compraria": "talvez",
+        "pontos_positivos": [
+          "Agendamento via aplicativo fácil",
+          "Toalha quente e cerveja artesanal como diferencial"
+        ],
+        "objecoes": [
+          "Preço alto comparado aos concorrentes",
+          "Valor adicional pode não compensar o tempo gasto para ir ao centro comercial"
+        ],
+        "mudou_de_opiniao": false,
+        "preco_maximo": 70.0,
+        "o_que_mudaria": "reduzir o preço para R$70 ou oferecer desconto exclusivo para agendamentos pelo app"
+      },
+      "origem": "groq/openai/gpt-oss-120b",
+      "duracao_segundos": 1.0
+    },
+    {
+      "persona_id": "critico",
+      "persona_nome": "Consumidor Crítico",
+      "rodada": 1,
+      "opiniao": {
+        "fala": "O corte com barba, toalha quente e ainda uma cerveja artesanal parece legal, mas pagando R$85 eu ainda não vejo um ganho real em relação à rede de shoppings que cobra R$70 e oferece ambiente moderno sem firula extra. A cerveja é um diferencial, porém não compensa o preço elevado para quem busca só um corte rápido.",
+        "interesse": 5,
+        "compraria": "talvez",
+        "pontos_positivos": [
+          "Serviço completo com toalha quente",
+          "Cerveja artesanal de cortesia",
+          "Agendamento via app"
+        ],
+        "objecoes": [
+          "Preço 27% maior que a rede de shoppings que já tem ambiente moderno",
+          "Diferencial da cerveja pode ser visto como marketing barato, não valor real",
+          "Localização em centro comercial pode ser menos conveniente para quem trabalha em áreas diferentes"
+        ],
+        "mudou_de_opiniao": false,
+        "preco_maximo": 70.0,
+        "o_que_mudaria": "Reduzir o preço para cerca de R$70 ou oferecer um pacote adicional (ex.: tratamento facial) que justifique o valor cobrado."
+      },
+      "origem": "groq/openai/gpt-oss-120b",
+      "duracao_segundos": 1.1
+    },
+    {
+      "persona_id": "fiel_regiao",
+      "persona_nome": "Consumidor Fiel à Região",
+      "rodada": 1,
+      "opiniao": {
+        "fala": "Olha, eu curto muito um corte bem feito, mas a barbearia fica no centro comercial e o preço de R$85,00 me parece bem alto comparado à barbearia da rua que eu conheço há anos, que cobre R$35. Além disso, não conheço o dono nem vejo ninguém da vizinhança por lá, e tudo parece muito digital, sem aquele papo de corredor que a gente tem aqui.",
+        "interesse": 3,
+        "compraria": "nao",
+        "pontos_positivos": [
+          "Corte com toalha quente",
+          "Cerveja artesanal de cortesia",
+          "Ambiente premium"
+        ],
+        "objecoes": [
+          "Preço muito acima do que eu costumo pagar",
+          "Local distante e impessoal",
+          "Nenhum vínculo com a comunidade local"
+        ],
+        "mudou_de_opiniao": false,
+        "preco_maximo": 50.0,
+        "o_que_mudaria": "Reduzir o preço para algo próximo de R$50 ou oferecer um desconto especial para moradores da região"
+      },
+      "origem": "groq/openai/gpt-oss-120b",
+      "duracao_segundos": 1.3
+    },
+    {
+      "persona_id": "economico",
+      "persona_nome": "Consumidor Econômico",
+      "rodada": 2,
+      "opiniao": {
+        "fala": "Não vejo sentido no que o Consumidor Exigente disse que \"se houver garantia de satisfação\" resolveria o preço; pra mim R$85 ainda não cabe no orçamento, nem que o corte fosse perfeito. O que me fez repensar um pouquinho foi o ponto do Consumidor Ocupado sobre o app: se o dono oferecesse um desconto exclusivo pra marcações pelo app, poderia ficar mais atraente, mas ainda precisaria cair bem abaixo de R$70 pra valer a pena. No fim, continuo achando caro demais.",
+        "interesse": 3,
+        "compraria": "nao",
+        "pontos_positivos": [
+          "Cerveja artesanal de cortesia",
+          "Toalha quente",
+          "Agendamento via app"
+        ],
+        "objecoes": [
+          "Preço R$85 muito acima do que eu gasto habitualmente",
+          "Mesmo com desconto no app ainda ficaria caro comparado à concorrência",
+          "Benefício da cerveja não compensa o valor extra"
+        ],
+        "mudou_de_opiniao": false,
+        "preco_maximo": null,
+        "o_que_mudaria": "Conceder um desconto exclusivo de pelo menos 20% para agendamentos pelo aplicativo, reduzindo o preço para cerca de R$68"
+      },
+      "origem": "groq/openai/gpt-oss-120b",
+      "duracao_segundos": 15.3
+    },
+    {
+      "persona_id": "exigente",
+      "persona_nome": "Consumidor Exigente",
+      "rodada": 2,
+      "opiniao": {
+        "fala": "Não concordo com o Consumidor Fiel à Região que acha que o preço deveria cair para R$50 – para mim isso desvaloriza a proposta premium e elimina a margem necessária para garantir profissionais experientes e a experiência de toalha quente com cerveja. Por outro lado, o ponto levantado pelo Consumidor Ocupado de oferecer um desconto exclusivo pelo aplicativo me convenceu; se o preço fosse ajustado para R$70 com garantia de satisfação, eu consideraria a compra.",
+        "interesse": 7,
+        "compraria": "sim",
+        "pontos_positivos": [
+          "Toalha quente e cerveja artesanal",
+          "Agendamento fácil via app",
+          "Local central"
+        ],
+        "objecoes": [
+          "Preço ainda acima da média sem garantia clara",
+          "Falta de avaliações verificáveis"
+        ],
+        "mudou_de_opiniao": true,
+        "preco_maximo": 70.0,
+        "o_que_mudaria": "Oferecer um desconto exclusivo de R$15 via aplicativo, fixando o preço em R$70 e garantindo retoque gratuito caso o cliente não fique satisfeito"
+      },
+      "origem": "groq/openai/gpt-oss-120b",
+      "duracao_segundos": 36.5
+    },
+    {
+      "persona_id": "ocupado",
+      "persona_nome": "Consumidor Ocupado",
+      "rodada": 2,
+      "opiniao": {
+        "fala": "Discordo do Consumidor Fiel à Região quando ele reclama que tudo é muito digital, pois o agendamento por app é justamente o que salva o meu tempo corrido. Por outro lado, o Consumidor Crítico tem um ponto forte ao comparar com a rede de shoppings de R$70 que entrega a mesma praticidade sem firula. Mantendo meu foco em gastar pouco tempo, os R$85 continuam puxados pelo que entrega, mas o app compensa um pouco a correria.",
+        "interesse": 4,
+        "compraria": "nao",
+        "pontos_positivos": [
+          "Agendamento por aplicativo que economiza tempo",
+          "Serviço completo que resolve corte e barba de uma vez"
+        ],
+        "objecoes": [
+          "Preço de R$85 é mais alto que a concorrência do shopping sem trazer ganho real de tempo",
+          "Etapas ou custos extras que não justificam a diferença para o concorrente"
+        ],
+        "mudou_de_opiniao": false,
+        "preco_maximo": 70.0,
+        "o_que_mudaria": "igualar o preço aos R$ 70 da rede de shoppings para valer a pena a troca pelo app"
+      },
+      "origem": "gemini/gemini-3.5-flash-lite",
+      "duracao_segundos": 43.8
+    },
+    {
+      "persona_id": "critico",
+      "persona_nome": "Consumidor Crítico",
+      "rodada": 2,
+      "opiniao": {
+        "fala": "Não concordo com o Consumidor Fiel à Região que descarta tudo por ser \"digital\"; para mim a agilidade do app não tira a qualidade do serviço. O ponto que me fez reconsiderar foi o do Consumidor Exigente: se a barbearia garantir a satisfação e oferecer um retoque gratuito, o preço de R$85 começa a fazer sentido como experiência premium. Ainda assim, ainda preciso de um motivo concreto para fechar, então fico em \"talvez\" com interesse 6.",
+        "interesse": 6,
+        "compraria": "talvez",
+        "pontos_positivos": [
+          "Toalha quente e cerveja artesanal",
+          "Agendamento via app",
+          "Possibilidade de garantia de satisfação"
+        ],
+        "objecoes": [
+          "Preço ainda acima da concorrência sem prova de qualidade extra",
+          "Necessidade de garantia ou prova de experiência superior"
+        ],
+        "mudou_de_opiniao": true,
+        "preco_maximo": 75.0,
+        "o_que_mudaria": "Oferecer garantia de satisfação com retoque gratuito caso o cliente não fique feliz com o corte, justificando o preço premium."
+      },
+      "origem": "groq/openai/gpt-oss-120b",
+      "duracao_segundos": 20.5
+    },
+    {
+      "persona_id": "fiel_regiao",
+      "persona_nome": "Consumidor Fiel à Região",
+      "rodada": 2,
+      "opiniao": {
+        "fala": "Bom, eu discordo do Consumidor Exigente quando ele acha que talvez eu compre se houver garantia; pra mim, o problema maior é que não conheço ninguém ali, nem o dono, nem a equipe, e o preço de R$85 ainda parece exagerado mesmo com toalha quente e cerveja. O que o Consumidor Ocupado trouxe me fez repensar um pouco: a praticidade do agendamento pelo app ajuda, mas ainda não compensa o valor alto e a falta de vínculo com a comunidade que eu tanto prezo. Enquanto não houver um desconto para quem mora por aqui ou um jeito de sentir que o lugar é nosso, continuo fora.",
+        "interesse": 3,
+        "compraria": "nao",
+        "pontos_positivos": [
+          "Toalha quente",
+          "Cerveja artesanal de cortesia",
+          "Agendamento fácil pelo app"
+        ],
+        "objecoes": [
+          "Preço muito acima do que pago na barbearia da rua",
+          "Ambiente impessoal e distante da comunidade local",
+          "Nenhum vínculo com moradores da região"
+        ],
+        "mudou_de_opiniao": false,
+        "preco_maximo": 55.0,
+        "o_que_mudaria": "Oferecer um desconto especial para residentes da região e criar um ambiente mais familiar, com o dono presente e conhecendo os clientes"
+      },
+      "origem": "groq/openai/gpt-oss-120b",
+      "duracao_segundos": 21.6
+    }
+  ],
+  "rodadas": 2,
+  "provedor_principal": "groq",
+  "tokens_usados": 25218,
+  "duracao_segundos": 82.5,
+  "relatorio": {
+    "indicadores": {
+      "preco_ofertado": 85.0,
+      "interesse_medio_r1": 4.2,
+      "interesse_medio_r2": 4.6,
+      "decisoes_r2": {
+        "sim": 1,
+        "talvez": 1,
+        "nao": 3
+      },
+      "preco_maximo_medio": 67.5,
+      "mudaram_de_posicao": 2,
+      "por_persona": [
+        {
+          "persona_id": "economico",
+          "persona_nome": "Consumidor Econômico",
+          "interesse_r1": 3,
+          "interesse_r2": 3,
+          "compraria_r1": "nao",
+          "compraria_r2": "nao",
+          "mudou": false,
+          "preco_maximo": null
+        },
+        {
+          "persona_id": "exigente",
+          "persona_nome": "Consumidor Exigente",
+          "interesse_r1": 5,
+          "interesse_r2": 7,
+          "compraria_r1": "talvez",
+          "compraria_r2": "sim",
+          "mudou": true,
+          "preco_maximo": 70.0
+        },
+        {
+          "persona_id": "ocupado",
+          "persona_nome": "Consumidor Ocupado",
+          "interesse_r1": 5,
+          "interesse_r2": 4,
+          "compraria_r1": "talvez",
+          "compraria_r2": "nao",
+          "mudou": true,
+          "preco_maximo": 70.0
+        },
+        {
+          "persona_id": "critico",
+          "persona_nome": "Consumidor Crítico",
+          "interesse_r1": 5,
+          "interesse_r2": 6,
+          "compraria_r1": "talvez",
+          "compraria_r2": "talvez",
+          "mudou": false,
+          "preco_maximo": 75.0
+        },
+        {
+          "persona_id": "fiel_regiao",
+          "persona_nome": "Consumidor Fiel à Região",
+          "interesse_r1": 3,
+          "interesse_r2": 3,
+          "compraria_r1": "nao",
+          "compraria_r2": "nao",
+          "mudou": false,
+          "preco_maximo": 55.0
+        }
+      ]
+    },
+    "analise": {
+      "resumo": "Os consumidores perceberam a barbearia como premium, mas o preço de R$85 ainda é visto como alto em relação à concorrência. O diferencial da cerveja artesanal e da toalha quente atraiu atenção, porém não foi suficiente para justificar o custo. As objeções giram em torno do preço, falta de provas de qualidade e ausência de vínculo local. Pequenos ajustes de preço, descontos via app e garantias de satisfação podem melhorar a percepção de valor.",
+      "elogios": [
+        "Cerveja artesanal de cortesia (Econômico, Exigente, Ocupado, Crítico, Fiel à Região)",
+        "Toalha quente que eleva a experiência (Econômico, Exigente, Ocupado, Crítico, Fiel à Região)",
+        "Agendamento fácil via aplicativo (Econômico, Ocupado, Crítico, Fiel à Região)",
+        "Local central no centro comercial, fácil acesso (Exigente, Crítico)"
+      ],
+      "objecoes": [
+        "Preço R$85 muito acima da concorrência (Econômico, Exigente, Ocupado, Crítico, Fiel à Região)",
+        "Falta de avaliações verificáveis ou garantia de qualidade (Exigente, Crítico)",
+        "Ausência de vínculo com a comunidade local e ambiente impessoal (Fiel à Região)",
+        "Benefício da cerveja não compensa o valor extra (Econômico, Ocupado)"
+      ],
+      "fatores_de_decisao": [
+        "Preço percebido versus valor entregue",
+        "Conveniência do agendamento via app",
+        "Diferenciais sensoriais (toalha quente, cerveja)",
+        "Credibilidade e prova social (avaliações, garantia)"
+      ],
+      "pontos_de_atencao": [
+        "Preço: R$85 está 27% acima da rede de shopping (R$70) e 143% acima da barbearia de rua (R$35)",
+        "Produto: Diferenciais (cerveja, toalha) ainda não convencem como valor suficiente",
+        "Conveniência: App é positivo, mas não compensa preço alto",
+        "Divulgação: Falta de avaliações reais e de vínculo com a comunidade local"
+      ],
+      "recomendacoes": [
+        "Aplicar desconto exclusivo de 20% para agendamentos pelo app, reduzindo o preço para aproximadamente R$68 (para atender Econ��mico, Ocupado)",
+        "Implementar garantia de satisfação com retoque gratuito, comunicando claramente nas redes (para Exigente, Crítico)",
+        "Criar programa de fidelidade local com desconto para residentes da região e promover eventos de confraternização para gerar vínculo (para Fiel à Região)",
+        "Reavaliar a precificação e lançar um pacote mensal de R$60 com corte, barba, toalha quente e cerveja, oferecendo melhor custo‑benefício (para todos)"
+      ],
+      "experimentos": [
+        "Oferecer desconto de 20% no app para os 30 primeiros agendamentos e medir taxa de conversão e retenção em 30 dias",
+        "Testar garantia de satisfação: oferecer retoque gratuito ao cliente que não ficar satisfeito, registrar número de solicitações e impacto na recomendação (NPS)",
+        "Lançar um pacote mensal de R$60 para 20 clientes piloto, acompanhar frequência de visitas e receita média por cliente por 2 meses"
+      ]
+    },
+    "origem_analise": "groq/openai/gpt-oss-120b",
+    "erro_analise": null,
+    "tokens_usados": 3928,
+    "duracao_segundos": 2.4,
+    "aviso": "Opiniões geradas por IA (consumidores sintéticos): não representam uma amostra real de clientes. Use como hipóteses a validar, não como previsão de vendas."
+  }
+}

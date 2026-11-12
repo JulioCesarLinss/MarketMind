@@ -130,7 +130,20 @@ MarketMind/
 
 ## Como rodar
 
-*Será preenchido ao final do Dia 1, quando o scaffold do frontend e do backend estiver pronto.*
+**Backend (API):**
+
+```powershell
+cd backend
+py -3.12 -m venv .venv
+.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+copy ..\.env.example ..\.env    # preencha as chaves (ou deixe LLM_PROVIDER=mock)
+uvicorn app.main:app --reload
+```
+
+Documentação interativa em http://localhost:8000/docs. Guia para o frontend: [docs/api.md](docs/api.md).
+
+**Frontend:** *em construção.*
 
 ## Equipe
 

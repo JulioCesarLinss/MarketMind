@@ -1,0 +1,190 @@
+# API do MarketMind — guia para o frontend
+
+Base local: `http://localhost:8000` · Documentação interativa (testar pelo navegador): **http://localhost:8000/docs**
+
+## Subir a API na sua máquina
+
+```powershell
+cd backend
+py -3.12 -m venv .venv            # só na primeira vez
+.venv\Scripts\Activate.ps1
+pip install -r requirements.txt   # só na primeira vez (ou quando mudar)
+uvicorn app.main:app --reload
+```
+
+Você **não precisa de chave de IA** para desenvolver o front: use `?demo=true` (respostas gravadas, ~3 s por simulação).
+O CORS já libera `http://localhost:5173` (porta padrão do Vite).
+
+## Fluxo
+
+```
+1. POST /simulacoes?demo=true   (dados do formulário)  →  { "id": "bc7327ef54ca", "status": "rodando" }
+2. GET  /simulacoes/{id}/stream  →  feed ao vivo: uma fala por evento, o aviso "etapa" (analista escrevendo)
+                                    e por fim o evento "fim" com o resultado + relatório
+3. GET  /simulacoes/{id}         →  tudo de uma vez (ex.: ao recarregar a página)
+```
+
+| Método | Rota | Para quê |
+|---|---|---|
+| `GET` | `/health` | API está de pé? |
+| `GET` | `/personas` | As 5 personas (id, nome, descrição, prioridades) para montar os cards |
+| `POST` | `/simulacoes` | Inicia uma simulação. Query `demo=true` = sem IA |
+| `GET` | `/simulacoes/{id}/stream` | Feed ao vivo (Server-Sent Events) |
+| `GET` | `/simulacoes/{id}` | Estado completo: `status`, `mensagens`, `resultado`, `erro` |
+
+Sem IA configurada no servidor e sem `demo=true`, o `POST` responde **503**. Dados inválidos → **422** (o FastAPI diz qual campo).
+
+## 1. Enviar o formulário — `POST /simulacoes`
+
+Campos = formulário do README. `custos` e `concorrentes` são opcionais (no máximo 3 concorrentes).
+
+```json
+{
+  "tipo": "Barbearia premium",
+  "localizacao": "Centro comercial de capital",
+  "produto": "Corte + barba com toalha quente e cerveja artesanal de cortesia",
+  "preco": 85.0,
+  "publico": "Homens de 25 a 45 anos que trabalham em escritório",
+  "divulgacao": "Instagram e agendamento por aplicativo",
+  "custos": { "custo_fixo_mensal": 12000, "custo_variavel_unitario": 25, "taxa_plataforma_pct": 0 },
+  "concorrentes": [
+    { "nome": "Barbearia de rua", "preco": 35.0, "observacao": "sem agendamento" },
+    { "nome": "Rede de barbearias de shopping", "preco": 70.0, "observacao": "ambiente moderno" }
+  ]
+}
+```
+
+Regras: textos obrigatórios não podem ser vazios; `preco > 0`; preços e custos `≥ 0`; `taxa_plataforma_pct` de 0 a 100.
+
+## 2. Feed ao vivo — `GET /simulacoes/{id}/stream`
+
+Usa o `EventSource` nativo do navegador (não precisa de biblioteca):
+
+```ts
+const API = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
+
+const r = await fetch(`${API}/simulacoes?demo=true`, {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify(formulario),
+});
+const { id } = await r.json();
+
+const feed = new EventSource(`${API}/simulacoes/${id}/stream`);
+feed.addEventListener("mensagem", (e) => {
+  const msg: MensagemDebate = JSON.parse(e.data);
+  adicionarNoFeed(msg);               // chega uma fala por vez (rodada 1, depois rodada 2)
+});
+feed.addEventListener("etapa", () => {
+  mostrarCarregando("O analista está lendo o debate..."); // chega quando as 10 falas terminam
+});
+feed.addEventListener("fim", (e) => {
+  const resultado: ResultadoSimulacao = JSON.parse(e.data);
+  mostrarRelatorio(resultado.relatorio); // pode vir sem `analise` (ver erro_analise)
+  feed.close();                       // IMPORTANTE: senão o navegador reconecta sozinho
+});
+feed.addEventListener("erro", (e) => {
+  mostrarErro((e as MessageEvent).data); // texto amigável
+  feed.close();
+});
+```
+
+- Cada simulação real leva **~60–90 s** (10 falas) + **~3–10 s** do analista. No modo demo, ~3 s.
+- Quem conecta atrasado (ou recarrega a página) recebe primeiro as falas que já aconteceram.
+- Linhas `: ping` a cada 15 s mantêm a conexão viva; o `EventSource` as ignora.
+
+## Tipos (TypeScript)
+
+```ts
+type Decisao = "sim" | "nao" | "talvez";
+
+interface Opiniao {
+  fala: string;                 // texto da persona (2 a 4 frases)
+  interesse: number;            // 0 a 10
+  compraria: Decisao;
+  pontos_positivos: string[];
+  objecoes: string[];
+  mudou_de_opiniao: boolean;    // o que a IA DECLAROU (use comparar rodadas para o número oficial)
+  preco_maximo: number | null;  // quanto pagaria no máximo
+  o_que_mudaria: string;        // sugestão ao dono
+}
+
+interface MensagemDebate {
+  persona_id: "economico" | "exigente" | "ocupado" | "critico" | "fiel_regiao";
+  persona_nome: string;
+  rodada: 1 | 2;
+  opiniao: Opiniao;
+  origem: string;               // ex.: "groq/openai/gpt-oss-120b" ou "gemini/..." (reserva) ou "mock/demo"
+  duracao_segundos: number;
+}
+
+interface ResultadoSimulacao {
+  mensagens: MensagemDebate[];  // 5 da rodada 1 + 5 da rodada 2
+  rodadas: number;
+  provedor_principal: string;
+  tokens_usados: number;        // debate + analista
+  duracao_segundos: number;
+  relatorio: Relatorio | null;  // sempre preenchido no evento "fim"
+}
+
+// ---- Relatório (dashboard) ----
+interface Relatorio {
+  indicadores: Indicadores;      // NÚMEROS: calculados pelo código, sempre presentes
+  analise: AnaliseDebate | null; // TEXTO: escrito pela IA; null se o analista falhou
+  origem_analise: string | null;
+  erro_analise: string | null;   // mensagem amigável quando analise == null
+  tokens_usados: number;
+  duracao_segundos: number;
+  aviso: string;                 // mostrar na tela: opiniões sintéticas, hipóteses a validar
+}
+
+interface Indicadores {
+  preco_ofertado: number;
+  interesse_medio_r1: number;    // 0 a 10
+  interesse_medio_r2: number;
+  decisoes_r2: { sim: number; talvez: number; nao: number };
+  preco_maximo_medio: number | null; // compare com preco_ofertado (ótimo para um gráfico)
+  mudaram_de_posicao: number;
+  por_persona: {
+    persona_id: string; persona_nome: string;
+    interesse_r1: number; interesse_r2: number;
+    compraria_r1: Decisao; compraria_r2: Decisao;
+    mudou: boolean;              // critério oficial de mudança de opinião
+    preco_maximo: number | null;
+  }[];
+}
+
+interface AnaliseDebate {
+  resumo: string;
+  elogios: string[];             // com quem disse entre parênteses
+  objecoes: string[];            // da mais citada para a menos
+  fatores_de_decisao: string[];
+  pontos_de_atencao: string[];   // cada item começa com "Preço:", "Produto:", "Conveniência:" ou "Divulgação:"
+  recomendacoes: string[];       // da mais importante para a menos
+  experimentos: string[];        // testes com clientes reais
+}
+
+interface SimulacaoEstado {      // GET /simulacoes/{id}
+  id: string;
+  status: "rodando" | "concluida" | "erro";
+  negocio: object;
+  mensagens: MensagemDebate[];
+  resultado: ResultadoSimulacao | null;
+  erro: string | null;
+}
+```
+
+**Mudou de opinião?** Use `relatorio.indicadores.por_persona[].mudou` (critério oficial: a decisão mudou **ou** o interesse variou 2+ pontos). Não use `opiniao.mudou_de_opiniao`, que é só o que a IA declarou.
+
+## Dados de exemplo
+
+[`docs/exemplos/resultado-simulacao.json`](exemplos/resultado-simulacao.json) — uma simulação **real** (barbearia, gpt-oss-120b), no formato `ResultadoSimulacao`, **com o relatório do analista**. Bom para montar as telas sem subir a API.
+
+## Ainda não existe (vai entrar na API depois)
+
+- **Indicadores financeiros** (margem, ponto de equilíbrio) — calculados a partir de `custos`; vão entrar dentro de `relatorio`.
+- **Histórico salvo**: hoje as simulações ficam em memória; se o servidor reiniciar, somem.
+
+## Lembrete de linguagem (vale para a interface)
+
+Usar "interesse simulado", "percepção dos agentes", "hipótese a validar". Nunca "chance de sucesso" ou "previsão de vendas". Mostrar aviso de que as opiniões são sintéticas.
