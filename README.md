@@ -1,5 +1,6 @@
 # MarketMind
 
+
 **Simulador de mercado com múltiplos agentes de IA** — projeto da equipe para o **AKCIT Camp 2026**.
 
 > Teste produtos, preços e estratégias antes de investir: o MarketMind cria consumidores sintéticos com perfis diferentes, faz com que eles avaliem e debatam a sua oferta, e entrega um relatório com objeções, oportunidades e cálculos financeiros básicos.
