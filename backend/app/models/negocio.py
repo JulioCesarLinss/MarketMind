@@ -20,7 +20,7 @@ class Custos(BaseModel):
 class NegocioEntrada(BaseModel):
     tipo: str = Field(min_length=1, max_length=120, description="Segmento e modelo de venda")
     localizacao: str = Field(min_length=1, max_length=120, description="Bairro e cidade")
-    produto: str = Field(min_length=1, max_length=200, description="O que será vendido")
+    produto: str = Field(min_length=1, max_length=1000, description="O que será vendido")
     preco: float = Field(gt=0, description="Preço de venda unitário, em reais")
     publico: str = Field(min_length=1, max_length=200, description="Quem se quer atingir")
     divulgacao: str = Field(min_length=1, max_length=200, description="Canais planejados")
