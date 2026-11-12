@@ -2,6 +2,7 @@ import type {
   MensagemDebate,
   NegocioPayload,
   PersonaPublica,
+  PesquisaMercado,
   ResultadoSimulacao,
   SimulacaoCriada,
 } from '../types'
@@ -54,6 +55,8 @@ export async function criarSimulacao(
 interface EventosFeed {
   aoReceberMensagem: (mensagem: MensagemDebate) => void
   aoIniciarAnalise?: () => void
+  aoIniciarPesquisa?: () => void
+  aoReceberPesquisa?: (pesquisa: PesquisaMercado) => void
   aoFinalizar: (resultado: ResultadoSimulacao) => void
   aoFalhar: (mensagem: string) => void
   aoReconectar: () => void
@@ -72,9 +75,25 @@ export function conectarFeed(id: string, eventos: EventosFeed): EventSource {
     }
   })
 
-  // O debate terminou e o agente analista começou a escrever o relatório
-  fonte.addEventListener('etapa', () => {
-    eventos.aoIniciarAnalise?.()
+  // Mudança de etapa: {"etapa": "pesquisa"} no início e {"etapa": "analise"} depois do debate
+  fonte.addEventListener('etapa', (evento) => {
+    let etapa = 'analise'
+    try {
+      etapa = JSON.parse((evento as MessageEvent<string>).data).etapa
+    } catch {
+      // formato antigo do backend: sem dados = análise
+    }
+    if (etapa === 'pesquisa') eventos.aoIniciarPesquisa?.()
+    else eventos.aoIniciarAnalise?.()
+  })
+
+  // Referência de mercado do agente pesquisador (chega antes da primeira fala)
+  fonte.addEventListener('pesquisa', (evento) => {
+    try {
+      eventos.aoReceberPesquisa?.(JSON.parse((evento as MessageEvent<string>).data) as PesquisaMercado)
+    } catch {
+      // sem a pesquisa, a simulação continua normalmente
+    }
   })
 
   fonte.addEventListener('fim', (evento) => {

@@ -306,6 +306,32 @@ Observações:
 
 **Fica para depois do MVP:** mais personas (impulsiva, desconfiada de negócio novo, não-consumidor) e várias instâncias por arquétipo, pois cada persona custa ~2 chamadas; adaptar as personas ao negócio com IA; validar as respostas com clientes reais de alguns negócios (bom argumento para a apresentação).
 
+### 4.4.1 Agente pesquisador (referência de mercado)
+
+`agents/pesquisador.py` roda **antes do debate** e gera um JSON (`PesquisaMercado`) que entra no contexto das personas e do analista.
+
+1. **IA planeja** (modelo das personas): tipo de estabelecimento, produto comparável, cidade, categoria do mapa (de uma **lista fechada** em `services/mapa.py`) e palavras do nome.
+2. **O código monta 3 buscas** (geral, "barato popular", "premium") e busca no **Tavily** (`services/busca/`, mesmo padrão da camada de LLM, com reserva opcional).
+3. **Ao mesmo tempo, conta lojas** no OpenStreetMap: o Nominatim acha as coordenadas e o Overpass conta num raio de 2 km (3 servidores consultados em paralelo). Se o Overpass falhar, há o plano B, a busca por nome no Nominatim, marcada como **parcial**: nível de concorrência "indeterminado" e sem nomes.
+4. **O código recorta só os trechos com "R$"** (no máximo 25, descartando valores fora de 0,2×–5× o preço do usuário) e a **IA extrai** os exemplos (modelo do analista).
+5. **O código valida e calcula:**
+   - aceita só preços escritos no trecho citado;
+   - no máximo 3 por loja;
+   - com 6 ou mais preços, as faixas são os **terços da distribuição de preços**;
+   - calcula média, desvio-padrão, mínimo e máximo por faixa e no geral;
+   - calcula a posição do preço do usuário (diferença em % e em desvios-padrão).
+
+**Falhas:** cada parte falha sozinha (`erro` no JSON) e a simulação segue. Se a pesquisa não trouxer dados, ela nem entra no prompt das personas. Há **cache** de 24 h por negócio.
+
+**Comandos:** `python -m scripts.testar_busca` confere as chaves e o mapa; `python -m scripts.pesquisar --negocio barbearia --salvar pesquisa.json` gera o JSON; `python -m scripts.simular` mostra a pesquisa antes do debate (`--sem-pesquisa` para pular).
+
+**Chaves:** `TAVILY_API_KEY` (grátis, 1.000 buscas/mês, sem cartão: https://app.tavily.com). A busca do Ollama (`OLLAMA_API_KEY`) foi implementada como reserva, mas **exige créditos pagos** (erro 402 no teste).
+
+**Testes reais (2026-11-12):**
+- **Barbearia** (Boa Viagem, R$ 85): 7 preços confirmados de barbearias reais (Booksy, Trois, Baffi, Savoie), média R$ 94,71 ± R$ 31,54, faixas R$ 51 / R$ 100 / R$ 130. Levou ~21 s e ~7 mil tokens.
+- **Marmitaria** (Graças, R$ 26): 7 preços, média R$ 21,07, "23% acima da média, 1,6 desvio-padrão".
+- **Overpass:** os 3 servidores públicos estavam fora do ar nos testes, então a contagem ficou parcial (plano B). No Render pode funcionar: conferir.
+
 ### 4.5 Linguagem responsável (vale para prompts e interface)
 
 Usar "interesse simulado", "percepção dos agentes", "hipótese a validar". Nunca "chance de sucesso" ou "previsão de vendas". Mostrar aviso de que as opiniões são sintéticas.
@@ -395,6 +421,8 @@ Atenções:
 ### Tomadas
 | Data | Decisão | Motivo |
 |---|---|---|
+| 2026-11-12 | Agente pesquisador com Tavily (busca) + OpenStreetMap (contagem de lojas) | Tavily é grátis sem cartão; a busca do Ollama exige créditos e o ScrapeGraphAI tem só 500 créditos únicos; Google Places exige cartão |
+| 2026-11-12 | Números da pesquisa calculados pelo código (preço precisa estar escrito no trecho; faixas por terços de preço) | Evita preço inventado pela IA e faixas "todas no meio" |
 | 2026-11-11 | Backend acessa LLM só via interface `LLMProvider`, com `MockProvider` como padrão | Ainda não temos provedor; permite desenvolver e demonstrar sem custo |
 | 2026-11-11 | Demo em URL pública: Vercel + Render | Avaliadores podem testar; ambos têm plano gratuito |
 | 2026-11-11 | Saída dos agentes em JSON validado (Pydantic) | Dashboard baseado em números, não em texto livre |
@@ -416,6 +444,7 @@ Atenções:
 
 | Data | Autor | Commit | Mudança |
 |---|---|---|---|
+| 2026-11-12 | Júlio | `feat: agente pesquisador de mercado` | Busca de preços na internet (Tavily, reserva Ollama) + contagem de lojas no OpenStreetMap; faixas popular/intermediária/premium com média e desvio-padrão; posição do preço do usuário; nível de concorrência; JSON entra no contexto das personas e do analista; eventos SSE `etapa pesquisa` e `pesquisa`; seção "Mercado na região" no front; scripts `pesquisar` e `testar_busca`; 20 testes novos |
 | 2026-11-12 | Júlio | `feat: relatório do analista no frontend` | Tela de resultado mostra resumo, recomendações, fatores de decisão, pontos de atenção (com etiqueta da área), experimentos e o card "preço que pagariam × preço cobrado"; usa os indicadores do backend; status "analista escrevendo" no evento `etapa`; aviso quando o analista falha |
 | 2026-11-12 | Júlio | `feat: agente analista` | `agents/analista.py`: indicadores calculados pelo código + análise em texto pela IA (resumo, elogios, objeções, fatores, pontos de atenção, recomendações, experimentos); schemas `Relatorio`/`Indicadores`/`AnaliseDebate`; sem mock no fim da cadeia do analista; API envia evento `etapa` e o relatório no `fim`; `simular.py` imprime o relatório (`--sem-analista` para pular); `demo_data/analisedebate.json`; exemplo real atualizado em `docs/exemplos/`; 5 testes novos |
 | 2026-11-12 | Júlio | `feat: API FastAPI com feed ao vivo` | `app/main.py` (CORS via `FRONTEND_URL`), rotas `/health`, `/personas`, `/simulacoes` (+ `?demo=true`), `/simulacoes/{id}`, `/simulacoes/{id}/stream` (SSE com ping); `NegocioEntrada` (campos do README, até 3 concorrentes); simulações em memória com replay para quem conecta atrasado; `docs/api.md` + exemplo real em `docs/exemplos/`; 6 testes novos |

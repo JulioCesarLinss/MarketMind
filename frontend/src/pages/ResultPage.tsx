@@ -1,5 +1,6 @@
 import AgentCard from '../components/AgentCard'
 import MessageCard from '../components/MessageCard'
+import MercadoRegiao from '../components/MercadoRegiao'
 import RelatorioAnalista from '../components/RelatorioAnalista'
 import { mudouDePosicao, type PersonaPublica, type ResultadoSimulacao } from '../types'
 
@@ -41,6 +42,14 @@ export default function ResultPage({ personas, resultado, onNovaAvaliacao }: Res
   const interesseFinal = indicadores ? indicadores.interesse_medio_r2 : mediaInteresse
   const decisoes = indicadores ? indicadores.decisoes_r2 : contagem
   const precoMaximo = indicadores?.preco_maximo_medio ?? null
+
+  // Numeração das seções: só conta as que existem nesta simulação
+  const pesquisa = resultado.pesquisa ?? null
+  const num = (n: number) => String(n).padStart(2, '0')
+  const secaoMercado = 6
+  const secaoRelatorio = secaoMercado + (pesquisa ? 1 : 0)
+  const secaoPerfis = secaoRelatorio + (relatorio ? 1 : 0)
+  const secaoHistorico = secaoPerfis + 1
 
   const objecoes = analise
     ? analise.objecoes
@@ -142,11 +151,13 @@ export default function ResultPage({ personas, resultado, onNovaAvaliacao }: Res
           </article>
         </section>
 
-        {relatorio && <RelatorioAnalista relatorio={relatorio} indiceSecao="06" />}
+        {pesquisa && <MercadoRegiao pesquisa={pesquisa} indiceSecao={num(secaoMercado)} />}
+
+        {relatorio && <RelatorioAnalista relatorio={relatorio} indiceSecao={num(secaoRelatorio)} />}
 
         <section className="final-agents-section">
           <div className="section-heading">
-            <div><span className="section-index">{relatorio ? '07' : '06'} <span>/ PERFIS</span></span><h2>A percepção de cada agente</h2></div>
+            <div><span className="section-index">{num(secaoPerfis)} <span>/ PERFIS</span></span><h2>A percepção de cada agente</h2></div>
           </div>
           <div className="agents-grid result-agents-grid">
             {personas.map((persona) => (
@@ -163,7 +174,7 @@ export default function ResultPage({ personas, resultado, onNovaAvaliacao }: Res
 
         <section className="full-feed-section">
           <div className="section-heading feed-heading">
-            <div><span className="section-index">{relatorio ? '08' : '07'} <span>/ HISTÓRICO</span></span><h2>Debate completo</h2></div>
+            <div><span className="section-index">{num(secaoHistorico)} <span>/ HISTÓRICO</span></span><h2>Debate completo</h2></div>
             <span className="feed-count">{resultado.mensagens.length} mensagens</span>
           </div>
           <div className="message-list">

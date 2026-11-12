@@ -34,6 +34,73 @@ export interface ResultadoSimulacao {
   tokens_usados: number
   duracao_segundos: number
   relatorio?: Relatorio | null
+  pesquisa?: PesquisaMercado | null
+}
+
+// ---- Pesquisa de mercado do agente pesquisador (internet + OpenStreetMap) ----
+
+export type NomeFaixa = 'popular' | 'intermediaria' | 'premium'
+
+export const NOMES_FAIXA: Record<NomeFaixa, string> = {
+  popular: 'Popular',
+  intermediaria: 'Intermediária',
+  premium: 'Premium',
+}
+
+export interface ExemploMercado {
+  faixa: NomeFaixa
+  estabelecimento: string
+  item: string
+  preco: number
+  fonte_url: string
+}
+
+export interface FaixaMercado {
+  faixa: NomeFaixa
+  quantidade: number
+  media: number | null
+  desvio_padrao: number | null
+  minimo: number | null
+  maximo: number | null
+  dados_suficientes: boolean
+  exemplos: ExemploMercado[]
+}
+
+export interface LojasRegiao {
+  quantidade: number | null
+  raio_metros: number
+  categoria: string
+  nivel_concorrencia: string // 'nenhum concorrente mapeado' | 'baixa' | 'media' | 'alta' | 'indeterminado'
+  nomes: string[]
+  fonte: string
+  erro: string | null
+  observacao: string
+}
+
+export interface PosicaoPreco {
+  preco_usuario: number
+  media_mercado: number | null
+  desvio_padrao_mercado: number | null
+  desvios_da_media: number | null
+  faixa_mais_proxima: NomeFaixa | null
+  resumo: string
+}
+
+export interface PesquisaMercado {
+  consultas: string[]
+  faixas: FaixaMercado[]
+  total_precos: number
+  media_geral: number | null
+  desvio_padrao_geral: number | null
+  posicao: PosicaoPreco | null
+  lojas_regiao: LojasRegiao | null
+  fontes: { titulo: string; url: string }[]
+  provedor_busca: string | null
+  tokens_usados: number
+  duracao_segundos: number
+  gerada_em: string
+  erro: string | null
+  aviso: string
 }
 
 // ---- Relatório do agente analista (ver docs/api.md) ----

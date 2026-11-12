@@ -1,17 +1,22 @@
 import AgentCard from '../components/AgentCard'
 import MessageCard from '../components/MessageCard'
-import { mudouDePosicao, type MensagemDebate, type PersonaPublica } from '../types'
+import { mudouDePosicao, NOMES_FAIXA, type MensagemDebate, type PersonaPublica, type PesquisaMercado } from '../types'
 
 interface DebatePageProps {
   personas: PersonaPublica[]
   mensagens: MensagemDebate[]
   rodadaAtual: 1 | 2
+  pesquisa?: PesquisaMercado | null
   statusTexto: string
   erro: string
   onVoltar: () => void
 }
 
-export default function DebatePage({ personas, mensagens, rodadaAtual, statusTexto, erro, onVoltar }: DebatePageProps) {
+function reais(valor: number): string {
+  return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+}
+
+export default function DebatePage({ personas, mensagens, rodadaAtual, pesquisa, statusTexto, erro, onVoltar }: DebatePageProps) {
   const progresso = Math.min((mensagens.length / 10) * 100, 100)
 
   return (
@@ -46,6 +51,20 @@ export default function DebatePage({ personas, mensagens, rodadaAtual, statusTex
           <div className="progress-track"><div style={{ width: `${progresso}%` }} /></div>
           <div className="progress-labels"><span>Primeira avaliação</span><span>Debate concluído</span></div>
         </section>
+
+        {pesquisa && (
+          <div className="market-strip">
+            <span className="market-strip-label">REFERÊNCIA DE MERCADO</span>
+            {pesquisa.total_precos > 0 && pesquisa.media_geral !== null ? (
+              <p>
+                <strong>{pesquisa.total_precos} preços</strong> encontrados na internet · média <strong>{reais(pesquisa.media_geral)}</strong>
+                {pesquisa.posicao?.faixa_mais_proxima && <> · seu preço está mais perto da faixa <strong>{NOMES_FAIXA[pesquisa.posicao.faixa_mais_proxima]}</strong></>}
+              </p>
+            ) : (
+              <p>{pesquisa.erro || 'Nenhum preço comparável encontrado na internet.'} Os agentes seguem com os dados do formulário.</p>
+            )}
+          </div>
+        )}
 
         {erro && <div className="stream-error"><strong>Não foi possível concluir a avaliação.</strong><span>{erro}</span><button onClick={onVoltar}>Voltar ao formulário</button></div>}
 

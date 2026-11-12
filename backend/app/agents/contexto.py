@@ -1,10 +1,52 @@
-"""Agente de contexto (MVP: função Python, sem LLM).
+"""Agente de contexto (função Python, sem LLM).
 
-Transforma os dados do formulário em um texto padronizado para as personas.
+Transforma os dados do formulário (e, se houver, a pesquisa de mercado) em um texto
+padronizado para as personas e o analista, deixando clara a ORIGEM de cada dado.
 """
 
+from typing import TYPE_CHECKING
 
-def formatar_negocio(negocio: dict) -> str:
+if TYPE_CHECKING:
+    from app.models.pesquisa import PesquisaMercado
+
+NOMES_FAIXA = {"popular": "Popular", "intermediaria": "Intermediária", "premium": "Premium"}
+
+
+def _reais(v: float) -> str:
+    return f"R$ {v:.2f}".replace(".", ",")
+
+
+def formatar_pesquisa(pesquisa: "PesquisaMercado") -> str:
+    """Seção com a referência de mercado (para as personas e o analista)."""
+    linhas = ["## Referência de mercado (pesquisa automática na internet e no mapa — valores aproximados)"]
+    if pesquisa.tem_precos():
+        linhas.append(f"Preços comparáveis encontrados: {pesquisa.total_precos}.")
+        for f in pesquisa.faixas:
+            nome = NOMES_FAIXA[f.faixa]
+            if f.media is None:
+                linhas.append(f"- {nome}: sem preços encontrados")
+                continue
+            desvio = f" (desvio-padrão {_reais(f.desvio_padrao)})" if f.desvio_padrao is not None else ""
+            exemplos = "; ".join(f"{e.estabelecimento}: {e.item} {_reais(e.preco)}" for e in f.exemplos[:3])
+            pouco = "" if f.dados_suficientes else " [poucos dados]"
+            linhas.append(f"- {nome}: média {_reais(f.media)}{desvio}, de {_reais(f.minimo)} a {_reais(f.maximo)}, "
+                          f"{f.quantidade} preço(s){pouco}. Ex.: {exemplos}")
+        if pesquisa.posicao:
+            linhas.append(f"- Posição do preço da oferta: {pesquisa.posicao.resumo}")
+    else:
+        linhas.append("- Não foram encontrados preços comparáveis na internet para esta região.")
+    lojas = pesquisa.lojas_regiao
+    if lojas and lojas.quantidade is not None:
+        nomes = f" (ex.: {', '.join(lojas.nomes[:5])})" if lojas.nomes else ""
+        if lojas.nivel_concorrencia == "indeterminado":
+            linhas.append(f"- Lojas do mesmo ramo na região: contagem incompleta{nomes}; o nível de concorrência não pôde ser medido.")
+        else:
+            linhas.append(f"- Lojas do mesmo ramo num raio de {lojas.raio_metros / 1000:.0f} km: pelo menos {lojas.quantidade}{nomes}. "
+                          f"Concorrência: {lojas.nivel_concorrencia}. (O mapa não tem todas as lojas pequenas.)")
+    return "\n".join(linhas)
+
+
+def formatar_negocio(negocio: dict, pesquisa: "PesquisaMercado | None" = None) -> str:
     linhas = [
         "## Oferta a avaliar (dados informados pelo empreendedor)",
         f"- Tipo de negócio: {negocio.get('tipo', '-')}",
@@ -21,4 +63,6 @@ def formatar_negocio(negocio: dict) -> str:
             linhas.append(f"- {c.get('nome', '-')}: R$ {c.get('preco', 0):.2f} — {c.get('observacao', '')}")
     else:
         linhas.append("\n## Concorrentes\n- Nenhum concorrente foi informado pelo empreendedor.")
+    if pesquisa is not None and pesquisa.tem_dados():
+        linhas.append("\n" + formatar_pesquisa(pesquisa))
     return "\n".join(linhas)

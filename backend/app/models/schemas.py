@@ -4,6 +4,8 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
+from app.models.pesquisa import PesquisaMercado
+
 
 class Opiniao(BaseModel):
     """Resposta de uma persona em uma rodada do debate."""
@@ -105,6 +107,7 @@ class ResultadoSimulacao(BaseModel):
     tokens_usados: int
     duracao_segundos: float
     relatorio: Relatorio | None = None
+    pesquisa: PesquisaMercado | None = Field(default=None, description="Referência de mercado do agente pesquisador")
 
     def da_rodada(self, rodada: int) -> list[MensagemDebate]:
         return [m for m in self.mensagens if m.rodada == rodada]

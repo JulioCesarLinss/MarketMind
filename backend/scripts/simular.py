@@ -20,6 +20,8 @@ from app.llm import criar_provider
 from app.llm.factory import ConfiguracaoLLMError
 from app.models.schemas import MensagemDebate, Relatorio, ResultadoSimulacao
 from app.services.orquestrador import Orquestrador
+from app.services.simulacoes import PesquisadorDemo
+from scripts.pesquisar import criar_pesquisador, imprimir_pesquisa
 
 ICONES = {"sim": "✅", "talvez": "🤔", "nao": "❌"}
 
@@ -99,6 +101,7 @@ async def main() -> None:
     parser.add_argument("--concorrencia", type=int, help="chamadas simultâneas (padrão: LLM_CONCORRENCIA)")
     parser.add_argument("--negocio", choices=list(NEGOCIOS), default="cafeteria", help="negócio de exemplo")
     parser.add_argument("--sem-analista", action="store_true", help="só o debate, sem o relatório")
+    parser.add_argument("--sem-pesquisa", action="store_true", help="pula a pesquisa de mercado na internet")
     parser.add_argument("--salvar", help="caminho de um arquivo .json para salvar o resultado")
     args = parser.parse_args()
 
@@ -113,7 +116,15 @@ async def main() -> None:
     print(f"Negócio: {negocio['tipo']} — {negocio['produto']} (R$ {negocio['preco']:.2f})")
 
     orquestrador = Orquestrador(provider, concorrencia=args.concorrencia, ao_publicar=imprimir_fala)
-    resultado = await orquestrador.executar(negocio)
+    pesquisa = None
+    if not args.sem_pesquisa:
+        print("\n  O pesquisador está buscando preços e lojas da região...")
+        try:
+            pesquisa = await (PesquisadorDemo() if args.provider == "mock" else criar_pesquisador()).executar(negocio)
+            imprimir_pesquisa(pesquisa)
+        except ConfiguracaoLLMError as erro:
+            print(f"  Pesquisador não configurado: {erro}")
+    resultado = await orquestrador.executar(negocio, pesquisa)
     imprimir_resumo(resultado)
 
     if not args.sem_analista:

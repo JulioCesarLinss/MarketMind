@@ -1,0 +1,78 @@
+{
+  "consultas": [
+    "opção popular preço na região",
+    "opção intermediária preço na região",
+    "opção premium preço na região"
+  ],
+  "faixas": [
+    {
+      "faixa": "popular",
+      "quantidade": 3,
+      "media": 38.0,
+      "desvio_padrao": 4.32,
+      "minimo": 32.0,
+      "maximo": 42.0,
+      "dados_suficientes": true,
+      "exemplos": [
+        {"faixa": "popular", "estabelecimento": "Concorrente Popular A", "item": "versão básica", "preco": 32.0, "fonte_url": ""},
+        {"faixa": "popular", "estabelecimento": "Concorrente Popular B", "item": "versão básica", "preco": 40.0, "fonte_url": ""},
+        {"faixa": "popular", "estabelecimento": "Concorrente Popular C", "item": "versão básica", "preco": 42.0, "fonte_url": ""}
+      ]
+    },
+    {
+      "faixa": "intermediaria",
+      "quantidade": 3,
+      "media": 61.67,
+      "desvio_padrao": 6.24,
+      "minimo": 55.0,
+      "maximo": 70.0,
+      "dados_suficientes": true,
+      "exemplos": [
+        {"faixa": "intermediaria", "estabelecimento": "Concorrente Médio A", "item": "versão padrão", "preco": 55.0, "fonte_url": ""},
+        {"faixa": "intermediaria", "estabelecimento": "Concorrente Médio B", "item": "versão padrão", "preco": 60.0, "fonte_url": ""},
+        {"faixa": "intermediaria", "estabelecimento": "Concorrente Médio C", "item": "versão padrão", "preco": 70.0, "fonte_url": ""}
+      ]
+    },
+    {
+      "faixa": "premium",
+      "quantidade": 2,
+      "media": 102.5,
+      "desvio_padrao": 7.5,
+      "minimo": 95.0,
+      "maximo": 110.0,
+      "dados_suficientes": true,
+      "exemplos": [
+        {"faixa": "premium", "estabelecimento": "Concorrente Premium A", "item": "versão completa", "preco": 95.0, "fonte_url": ""},
+        {"faixa": "premium", "estabelecimento": "Concorrente Premium B", "item": "versão completa", "preco": 110.0, "fonte_url": ""}
+      ]
+    }
+  ],
+  "total_precos": 8,
+  "media_geral": 61.75,
+  "desvio_padrao_geral": 26.14,
+  "posicao": {
+    "preco_usuario": 85.0,
+    "media_mercado": 61.75,
+    "desvio_padrao_mercado": 26.14,
+    "desvios_da_media": 0.89,
+    "faixa_mais_proxima": "premium",
+    "resumo": "Exemplo de demonstração: o preço da oferta é comparado com a média encontrada e com a faixa mais próxima."
+  },
+  "lojas_regiao": {
+    "quantidade": 7,
+    "raio_metros": 2000,
+    "categoria": "outro",
+    "nivel_concorrencia": "media",
+    "nomes": ["Loja Exemplo 1", "Loja Exemplo 2", "Loja Exemplo 3"],
+    "fonte": "Demonstração",
+    "erro": null,
+    "observacao": "Número mínimo: lojas pequenas nem sempre estão no OpenStreetMap."
+  },
+  "fontes": [],
+  "provedor_busca": "demo",
+  "tokens_usados": 0,
+  "duracao_segundos": 0.5,
+  "gerada_em": "",
+  "erro": null,
+  "aviso": "MODO DEMONSTRAÇÃO: estes números são fictícios, só para mostrar como a referência de mercado aparece. Desligue o modo demo para pesquisar de verdade."
+}

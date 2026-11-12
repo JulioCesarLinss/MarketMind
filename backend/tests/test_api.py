@@ -48,6 +48,10 @@ def test_simulacao_demo_completa(client):
     assert len(mensagens) == 2 * len(PERSONAS)
     assert eventos[-1][0] == "fim"
     assert eventos[-2] == ("etapa", '{"etapa": "analise"}')  # aviso antes do relatório
+    # Pesquisa de mercado vem antes da primeira fala
+    assert eventos[0] == ("etapa", '{"etapa": "pesquisa"}')
+    assert eventos[1][0] == "pesquisa" and json.loads(eventos[1][1])["total_precos"] > 0
+    assert eventos[2][0] == "mensagem"
     final = json.loads(eventos[-1][1])
     assert final["rodadas"] == 2
     assert final["relatorio"]["analise"]["recomendacoes"]
