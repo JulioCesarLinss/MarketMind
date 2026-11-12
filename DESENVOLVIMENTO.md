@@ -63,7 +63,11 @@ frontend (Vercel)                      backend (Render)
                                      └──────────────────────────────────┘
 ```
 
-### Endpoints planejados
+### Endpoints
+
+Implementados: `GET /health`, `GET /personas`, `POST /simulacoes` (`?demo=true` = sem IA), `GET /simulacoes/{id}/stream` (SSE), `GET /simulacoes/{id}`. Guia completo para o frontend: [docs/api.md](docs/api.md). O cadastro separado de negócios (`POST /negocios`) ficou para quando houver SQLite: por enquanto o formulário vai direto no `POST /simulacoes`.
+
+Plano original:
 
 | Método | Rota | Função |
 |---|---|---|
@@ -330,7 +334,7 @@ Atenções:
 
 ### Dia 1 — Fundação
 - [x] Estrutura de pastas, README e este documento
-- [ ] Scaffold do backend (FastAPI, `main.py`, CORS, `requirements.txt`)
+- [x] Scaffold do backend (FastAPI, `main.py`, CORS, `requirements.txt`)
 - [ ] Scaffold do frontend (Vite + React + TS, Tailwind)
 - [ ] Modelos Pydantic/SQLModel e conexão SQLite
 - [ ] `POST /negocios` + formulário enviando dados
@@ -338,9 +342,9 @@ Atenções:
 
 ### Dia 2 — Agentes
 - [x] Interface `LLMProvider` + `MockProvider` + `demo_data/` + adaptadores Groq, Gemini e Ollama + script de teste
-- [ ] Definição das 5 personas e prompts
+- [x] Definição das 5 personas e prompts
 - [x] Orquestrador: rodada 1 e rodada 2 com memória por persona e limite de concorrência (script `simular`) — histórico ainda não vai para o banco
-- [ ] `POST /simulacoes` e `GET /simulacoes/{id}/stream` (SSE)
+- [x] `POST /simulacoes` e `GET /simulacoes/{id}/stream` (SSE)
 - [ ] Feed do debate no frontend
 - [x] Testar Groq e Gemini com chaves reais e escolher o padrão (Groq principal, Gemini reserva)
 
@@ -351,7 +355,7 @@ Atenções:
 - [ ] Avisos de dados sintéticos e despesas não consideradas na interface
 
 ### Dia 4 — Estabilização
-- [ ] Testes do orquestrador com `MockProvider`
+- [x] Testes do orquestrador com `MockProvider`
 - [ ] Correções e polimento visual
 - [ ] Gravar simulação real para o modo demo
 - [ ] README com "Como rodar", diagrama do fluxo dos agentes e BMC
@@ -394,6 +398,7 @@ Atenções:
 
 | Data | Autor | Commit | Mudança |
 |---|---|---|---|
+| 2026-11-12 | Júlio | `feat: API FastAPI com feed ao vivo` | `app/main.py` (CORS via `FRONTEND_URL`), rotas `/health`, `/personas`, `/simulacoes` (+ `?demo=true`), `/simulacoes/{id}`, `/simulacoes/{id}/stream` (SSE com ping); `NegocioEntrada` (campos do README, até 3 concorrentes); simulações em memória com replay para quem conecta atrasado; `docs/api.md` + exemplo real em `docs/exemplos/`; 6 testes novos |
 | 2026-11-11 | Júlio | `feat: personas genéricas e debate com discordância real` | Personas sem ramo fixo que se adaptam ao tipo de negócio; vida, tom, contradição; régua de notas, "leia todos os campos" e "não invente dados"; rodada 2 com o que os outros gostaram, objeções e sugestões, sem "Concordo", falas embaralhadas; testes com gpt-oss-120b para personas; `preco_maximo`/`o_que_mudaria`; `reasoning_effort=low`; 4 negócios de exemplo; `avaliar_personas` + `metricas.py`; 7 testes novos. "Concordo" na rodada 2: 100% → 0% |
 | 2026-11-11 | Júlio | `fix: mudança de opinião calculada pelo código` | `mudou_de_posicao()`: mudou a decisão de compra ou a nota variou 2+ pontos — a IA às vezes declarava errado; resumo mostra quais falas usaram a reserva |
 | 2026-11-11 | Júlio | `feat: orquestrador do debate` | `Orquestrador` (2 rodadas, memória por persona, concorrência limitada, aviso por fala), `MensagemDebate`/`ResultadoSimulacao`, contagem de tokens nos provedores, script `simular`, 5 testes novos; 1ª simulação real: ~14,7k tokens, 2 de 5 mudaram de opinião |

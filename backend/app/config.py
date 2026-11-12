@@ -39,5 +39,14 @@ class Settings:
     gemini_api_key: str = _env("GEMINI_API_KEY")
     ollama_base_url: str = _env("OLLAMA_BASE_URL", "http://localhost:11434/v1")
 
+    # Endereços do frontend liberados no CORS (separe vários por vírgula)
+    frontend_url: str = _env("FRONTEND_URL", "http://localhost:5173")
+
+    @property
+    def frontend_urls(self) -> list[str]:
+        urls = {u.strip().rstrip("/") for u in self.frontend_url.split(",") if u.strip()}
+        urls.add("http://localhost:5173")  # Vite em desenvolvimento
+        return sorted(urls)
+
 
 settings = Settings()

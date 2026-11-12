@@ -1,0 +1,87 @@
+"""Guarda as simulações em andamento e avisa quem está assistindo (feed ao vivo).
+
+MVP: tudo em memória. Se o servidor reiniciar, as simulações somem (o SQLite vem depois).
+"""
+
+import asyncio
+import logging
+import uuid
+from collections import OrderedDict
+from dataclasses import dataclass, field
+from typing import Literal
+
+from app.llm.base import LLMProvider
+from app.models.schemas import MensagemDebate, ResultadoSimulacao
+from app.services.orquestrador import Orquestrador
+
+log = logging.getLogger(__name__)
+
+Status = Literal["rodando", "concluida", "erro"]
+LIMITE_EM_MEMORIA = 50  # guarda só as últimas N simulações
+
+
+@dataclass
+class Evento:
+    tipo: Literal["mensagem", "fim", "erro"]
+    dados: str  # JSON pronto para enviar
+
+
+@dataclass
+class Simulacao:
+    id: str
+    negocio: dict
+    status: Status = "rodando"
+    mensagens: list[MensagemDebate] = field(default_factory=list)
+    resultado: ResultadoSimulacao | None = None
+    erro: str | None = None
+    ouvintes: list[asyncio.Queue] = field(default_factory=list)
+    tarefa: asyncio.Task | None = None
+
+    def avisar(self, evento: Evento) -> None:
+        for fila in self.ouvintes:
+            fila.put_nowait(evento)
+
+    def eventos_passados(self) -> list[Evento]:
+        """O que já aconteceu, para quem conecta no meio (ou depois) da simulação."""
+        eventos = [Evento("mensagem", m.model_dump_json()) for m in self.mensagens]
+        if self.status == "concluida" and self.resultado:
+            eventos.append(Evento("fim", self.resultado.model_dump_json()))
+        elif self.status == "erro":
+            eventos.append(Evento("erro", self.erro or "erro desconhecido"))
+        return eventos
+
+
+class GerenciadorSimulacoes:
+    def __init__(self) -> None:
+        self._simulacoes: OrderedDict[str, Simulacao] = OrderedDict()
+
+    def obter(self, id_: str) -> Simulacao | None:
+        return self._simulacoes.get(id_)
+
+    def iniciar(self, negocio: dict, provider: LLMProvider) -> Simulacao:
+        sim = Simulacao(id=uuid.uuid4().hex[:12], negocio=negocio)
+        self._simulacoes[sim.id] = sim
+        while len(self._simulacoes) > LIMITE_EM_MEMORIA:
+            self._simulacoes.popitem(last=False)
+        # Roda em segundo plano: a API responde na hora com o id
+        sim.tarefa = asyncio.create_task(self._executar(sim, provider))
+        return sim
+
+    async def _executar(self, sim: Simulacao, provider: LLMProvider) -> None:
+        async def ao_publicar(m: MensagemDebate) -> None:
+            sim.mensagens.append(m)
+            sim.avisar(Evento("mensagem", m.model_dump_json()))
+
+        try:
+            sim.resultado = await Orquestrador(provider, ao_publicar=ao_publicar).executar(sim.negocio)
+            sim.status = "concluida"
+            sim.avisar(Evento("fim", sim.resultado.model_dump_json()))
+        except Exception as erro:  # noqa: BLE001 — qualquer falha vira evento de erro no feed
+            log.exception("Simulação %s falhou", sim.id)
+            sim.status = "erro"
+            # Mensagem genérica para o público; o detalhe fica só no log do servidor
+            sim.erro = f"A simulação falhou ({type(erro).__name__}). Tente novamente em instantes."
+            sim.avisar(Evento("erro", sim.erro))
+
+
+gerenciador = GerenciadorSimulacoes()
