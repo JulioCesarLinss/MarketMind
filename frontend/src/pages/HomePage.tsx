@@ -98,12 +98,22 @@ export default function HomePage({ carregando, erro, aoAvaliar }: HomePageProps)
           <div className="hero-visual" aria-hidden="true">
             <div className="orbit orbit-one" />
             <div className="orbit orbit-two" />
-            <div className="orbit-core"><span className="core-spark">✳</span><span>MM</span></div>
-            <div className="orbit-node node-one">₱</div>
-            <div className="orbit-node node-two">✦</div>
-            <div className="orbit-node node-three">◷</div>
-            <div className="orbit-node node-four">⌕</div>
-            <div className="orbit-node node-five">⌖</div>
+
+            {/* Camada externa: 3 agentes */}
+            <div className="orbit-node node-one agent-orbit-motion outer-agent-one">₱</div>
+            <div className="orbit-node node-two agent-orbit-motion outer-agent-two">✦</div>
+            <div className="orbit-node node-five agent-orbit-motion outer-agent-three">⌖</div>
+
+            {/* Camada interna: 2 agentes */}
+            <div className="orbit-node node-three agent-orbit-motion inner-agent-one">◷</div>
+            <div className="orbit-node node-four agent-orbit-motion inner-agent-two">⌕</div>
+
+            {/* Núcleo do MarketMind */}
+            <div className="orbit-core">
+              <span className="core-spark">✳</span>
+              <span>MM</span>
+            </div>
+
             <div className="visual-caption">IDEIAS EM PERSPECTIVA</div>
           </div>
         </section>

@@ -403,3 +403,130 @@ a { color: inherit; text-decoration: none; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
+
+.hero-visual .orbit {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.hero-visual .orbit-one {
+  width: 330px;
+  height: 218px;
+}
+
+.hero-visual .orbit-two {
+  width: 246px;
+  height: 310px;
+  border-color: #e9e7f7;
+}
+
+.hero-visual .agent-orbit-motion {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  right: auto;
+  bottom: auto;
+  z-index: 3;
+  will-change: transform;
+}
+
+
+.outer-agent-one {
+  animation: orbit-outer 21s linear infinite;
+}
+
+.outer-agent-two {
+  animation: orbit-outer 21s linear infinite;
+  animation-delay: -7s;
+}
+
+.outer-agent-three {
+  animation: orbit-outer 21s linear infinite;
+  animation-delay: -14s;
+}
+
+
+.inner-agent-one {
+  animation: orbit-inner 17s linear infinite;
+  animation-delay: -2s;
+}
+
+.inner-agent-two {
+  animation: orbit-inner 17s linear infinite;
+  animation-delay: -10.5s;
+}
+
+
+@keyframes orbit-outer {
+  0% { transform: translate(-50%, -50%) translate(0, -109px); }
+  12.5% { transform: translate(-50%, -50%) translate(116.7px, -77.1px); }
+  25% { transform: translate(-50%, -50%) translate(165px, 0); }
+  37.5% { transform: translate(-50%, -50%) translate(116.7px, 77.1px); }
+  50% { transform: translate(-50%, -50%) translate(0, 109px); }
+  62.5% { transform: translate(-50%, -50%) translate(-116.7px, 77.1px); }
+  75% { transform: translate(-50%, -50%) translate(-165px, 0); }
+  87.5% { transform: translate(-50%, -50%) translate(-116.7px, -77.1px); }
+  100% { transform: translate(-50%, -50%) translate(0, -109px); }
+}
+
+
+@keyframes orbit-inner {
+  0% { transform: translate(-50%, -50%) translate(0, -155px); }
+  12.5% { transform: translate(-50%, -50%) translate(87px, -109.6px); }
+  25% { transform: translate(-50%, -50%) translate(123px, 0); }
+  37.5% { transform: translate(-50%, -50%) translate(87px, 109.6px); }
+  50% { transform: translate(-50%, -50%) translate(0, 155px); }
+  62.5% { transform: translate(-50%, -50%) translate(-87px, 109.6px); }
+  75% { transform: translate(-50%, -50%) translate(-123px, 0); }
+  87.5% { transform: translate(-50%, -50%) translate(-87px, -109.6px); }
+  100% { transform: translate(-50%, -50%) translate(0, -155px); }
+}
+
+
+.hero-visual .orbit-core {
+  position: relative;
+  z-index: 4;
+  animation: nucleus-pulse 4s ease-in-out infinite;
+}
+
+.hero-visual .core-spark {
+  animation: spark-turn 12s linear infinite;
+}
+
+@keyframes nucleus-pulse {
+  0%, 100% { transform: rotate(-7deg) scale(1); }
+  50% { transform: rotate(-7deg) scale(1.045); }
+}
+
+@keyframes spark-turn {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-visual .agent-orbit-motion,
+  .hero-visual .orbit-core,
+  .hero-visual .core-spark {
+    animation: none !important;
+  }
+
+  .outer-agent-one {
+    transform: translate(-50%, -50%) translate(0, -109px);
+  }
+
+  .outer-agent-two {
+    transform: translate(-50%, -50%) translate(142.9px, 54.5px);
+  }
+
+  .outer-agent-three {
+    transform: translate(-50%, -50%) translate(-142.9px, 54.5px);
+  }
+
+  .inner-agent-one {
+    transform: translate(-50%, -50%) translate(0, -155px);
+  }
+
+  .inner-agent-two {
+    transform: translate(-50%, -50%) translate(0, 155px);
+  }
+}
