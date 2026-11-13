@@ -21,7 +21,7 @@ from app.services import mapa
 from app.services.busca import BuscaIndisponivelError, BuscaWeb, ResultadoBusca
 
 PAGINA = (
-    "Barbearia Navalha: corte R$ 35,00 e barba R$ 25. Combo corte + barba R$ 55,00. "
+    "Barbearias em Recife. Barbearia Navalha: corte R$ 35,00 e barba R$ 25. Combo corte + barba R$ 55,00. "
     + "texto " * 80
     + "Studio Premium: corte + barba com toalha quente R$ 95,00 · taxa de agendamento R$ 1,00"
 )
@@ -143,7 +143,7 @@ def mapa_falso(monkeypatch):
 def test_pesquisa_completa(mapa_falso):
     busca = BuscaFalsa()
     p = asyncio.run(Pesquisador(IAFalsa(), IAFalsa(), busca).executar(NEGOCIOS["barbearia"]))
-    assert busca.consultas[:3] == ["barbearia Recife preço corte e barba",
+    assert busca.consultas[:3] == ["barbearia Boa Viagem Recife preço corte e barba",
                                    "barbearia Recife barato popular preço corte e barba",
                                    "barbearia Recife premium preço corte e barba"]
     # Só 2 preços: faz as rodadas 2 e 3 (3 buscas novas cada); a página repetida não é lida de novo
@@ -220,7 +220,7 @@ def test_segunda_rodada_soma_precos_de_paginas_novas(mapa_falso):
         async def buscar(self, consulta, max_resultados=5):
             self.consultas.append(consulta)
             if "tabela de preços" in consulta:
-                return [ResultadoBusca("Outra", "https://outra.com", "Barbearia Popular corte e barba R$ 40,00")]
+                return [ResultadoBusca("Outra", "https://outra.com", "Recife: Barbearia Popular corte e barba R$ 40,00")]
             return [ResultadoBusca("Página", "https://exemplo.com/precos", PAGINA)]
 
     class IADuasRodadas(IAFalsa):
@@ -246,7 +246,7 @@ def test_precisa_mais_precos():
 
 def test_para_de_buscar_quando_atinge_a_meta(mapa_falso):
     linhas = [f"popular | Loja {i % 5} | corte {i} | {30 + i},00 | T1" for i in range(12)]
-    pagina = " ".join(f"corte R$ {30 + i},00" for i in range(12))
+    pagina = "Recife " + " ".join(f"corte R$ {30 + i},00" for i in range(12))
 
     class BuscaCheia(BuscaFalsa):
         async def buscar(self, consulta, max_resultados=5):
@@ -273,3 +273,65 @@ def test_filtro_do_nominatim_fica_com_o_ramo_e_o_raio():
 
 def test_toda_categoria_tem_regra_no_nominatim():
     assert set(mapa.NOMINATIM_TIPOS) == set(mapa.CATEGORIAS)
+
+
+
+# ---------- Cidade e bairro ----------
+
+def test_bairro_e_normalizacao():
+    assert mod.extrair_bairro("Boa Viagem, Recife - PE", "Recife") == "Boa Viagem"
+    assert mod.extrair_bairro("Recife - PE", "Recife") == ""
+    assert mod.normalizar("São-Paulo") == "sao paulo"
+    assert mod.menciona(mod.normalizar("barbearias em sao-paulo"), "São Paulo")
+    assert not mod.menciona(mod.normalizar("Recifense"), "Recife")  # palavra inteira
+
+
+def test_descarta_paginas_de_outra_cidade_e_prioriza_o_bairro():
+    resultados = [
+        ResultadoBusca("Barbearia em Olinda", "https://a.com", "corte R$ 40"),
+        ResultadoBusca("Barbearias de Recife", "https://b.com", "corte R$ 50"),
+        ResultadoBusca("Barbearia", "https://recife.exemplo.com/boa-viagem", "corte R$ 60"),
+    ]
+    filtrados = mod.filtrar_por_cidade(resultados, "Recife", "Boa Viagem")
+    assert [r.url for r in filtrados] == ["https://recife.exemplo.com/boa-viagem", "https://b.com"]
+
+
+def test_so_paginas_de_outra_cidade_vira_erro_claro(mapa_falso):
+    class BuscaOutraCidade(BuscaFalsa):
+        async def buscar(self, consulta, max_resultados=5):
+            self.consultas.append(consulta)
+            return [ResultadoBusca("Barbearia em Olinda", "https://olinda.com", "corte e barba R$ 55,00")]
+
+    p = asyncio.run(Pesquisador(IAFalsa(), IAFalsa(), BuscaOutraCidade()).executar(NEGOCIOS["barbearia"]))
+    assert p.total_precos == 0 and "outras cidades" in p.erro
+
+
+def _pesquisa(precos=0, lojas=None):
+    from app.models.pesquisa import LojasRegiao
+    return PesquisaMercado(total_precos=precos, lojas_regiao=LojasRegiao(quantidade=lojas, raio_metros=2000,
+                                                                          categoria="x", nivel_concorrencia="x"))
+
+
+def test_observacao_de_negocio_unico():
+    assert "negócio único" in mod.observar_regiao(_pesquisa(0, 0), "Recife", "Boa Viagem", True)
+    assert "negócio único" in mod.observar_regiao(_pesquisa(0, None), "Recife", "", True)
+    assert "nenhuma com preço" in mod.observar_regiao(_pesquisa(0, 4), "Recife", "Boa Viagem", True)
+    assert "vizinhança" in mod.observar_regiao(_pesquisa(6, 0), "Recife", "Boa Viagem", True)
+    assert mod.observar_regiao(_pesquisa(6, 4), "Recife", "Boa Viagem", True) == ""
+    # falha técnica na busca não é "negócio único"
+    assert mod.observar_regiao(_pesquisa(0, None), "Recife", "", False) == ""
+
+
+def test_negocio_unico_chega_nas_personas(monkeypatch):
+    async def contar(localizacao, categoria, palavras, raio):
+        return mapa.LojasEncontradas(0, [], "teste"), None
+    monkeypatch.setattr(mod.mapa, "contar_lojas", contar)
+
+    class BuscaVazia(BuscaFalsa):
+        async def buscar(self, consulta, max_resultados=5):
+            self.consultas.append(consulta)
+            return []
+
+    p = asyncio.run(Pesquisador(IAFalsa(), IAFalsa(), BuscaVazia()).executar(NEGOCIOS["barbearia"]))
+    assert "negócio único" in p.observacao and p.tem_dados()
+    assert "negócio único" in formatar_negocio(NEGOCIOS["barbearia"], p)

@@ -35,6 +35,8 @@ def formatar_pesquisa(pesquisa: "PesquisaMercado") -> str:
             linhas.append(f"- Posição do preço da oferta: {pesquisa.posicao.resumo}")
     else:
         linhas.append("- Não foram encontrados preços comparáveis na internet para esta região.")
+    if pesquisa.observacao:
+        linhas.append(f"- Observação: {pesquisa.observacao}")
     lojas = pesquisa.lojas_regiao
     if lojas and lojas.quantidade is not None:
         nomes = f" (ex.: {', '.join(lojas.nomes[:5])})" if lojas.nomes else ""

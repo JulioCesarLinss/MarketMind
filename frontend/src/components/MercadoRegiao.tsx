@@ -40,6 +40,10 @@ export default function MercadoRegiao({ pesquisa, indiceSecao }: MercadoRegiaoPr
         <span className="section-side-caption">Pesquisa automática na internet e no mapa</span>
       </div>
 
+      {pesquisa.observacao && (
+        <div className="market-note"><span>i</span><p>{pesquisa.observacao}</p></div>
+      )}
+
       <div className="market-top">
         <article className="market-card market-position">
           <span>SEU PREÇO NO MERCADO</span>

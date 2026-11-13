@@ -9,7 +9,7 @@ Divisão de trabalho:
 
 import logging
 import time
-from statistics import mean
+from statistics import mean, median
 
 from app.agents.contexto import formatar_negocio
 from app.llm.base import LLMProvider
@@ -34,9 +34,49 @@ Regras:
 - Se houver referência de mercado, compare o preço da oferta com as faixas (popular, intermediária, premium) e com o nível de concorrência na região, deixando claro que são valores aproximados da internet.
 - Se a oferta tiver entrega, avalie se o modelo informado é confiável para este produto (prazo, taxa, área, riscos) com base no que as personas disseram.
 - Recomendações: concretas, baratas e viáveis para um pequeno negócio DESTE ramo, cada uma ligada a uma objeção. Aproveite as boas sugestões que as próprias personas deram ao dono.
-- Experimentos: testes rápidos com clientes reais, dizendo o que fazer e o que medir (ex.: "oferecer X para os 20 primeiros clientes e contar quantos voltam em 30 dias").
+- Preço: use a "Avaliação do preço" dos indicadores. Se a maioria pagaria o preço cobrado, NÃO recomende baixar o preço.
+- Experimentos: testes rápidos com clientes reais, dizendo o que fazer e o que medir, ADEQUADOS A ESTE RAMO e ao jeito como ele vende.
+  Amostra grátis, degustação e brinde NÃO são o padrão: em restaurante, marmita, delivery e na maioria dos serviços eles dão
+  prejuízo e não mostram se o cliente pagaria. Sugira no máximo UM experimento com algo gratuito, e só se fizer sentido no ramo.
+  Prefira testes em que o cliente paga, por exemplo:
+  · comida, marmita e delivery: combo ou kit de lançamento, plano semanal ou mensal, cupom para a 2ª compra, comparar duas
+    versões do cardápio ou da foto no app, pesquisa rápida após a entrega, parceria com empresas ou condomínios próximos;
+  · serviços (barbearia, estética, aulas, consertos): pacote ou assinatura, horário com preço diferente, programa de indicação,
+    pré-venda de pacotes;
+  · lojas e produtos: pré-venda, kit, frete grátis acima de um valor, testar dois preços ou dois anúncios.
+  Diga sempre o que medir (vendas, recompra em X dias, ticket médio, quantos usaram o cupom...).
 - Linguagem responsável: fale em "interesse simulado" e "hipóteses a validar". NUNCA fale em chance de sucesso, garantia ou previsão de vendas.
 - Português do Brasil, direto, para quem não é especialista."""
+
+
+TOLERANCIA_PRECO = 0.97  # 118,30 para um preço de 119 conta como "pagaria" (a IA costuma tirar uns centavos)
+MARGEM_PARA_SUBIR = 1.10  # mediana do máximo 10% acima do preço = há espaço para subir
+
+
+def aceita_preco(preco_maximo: float | None, compraria: str, preco_ofertado: float) -> bool:
+    """A persona pagaria o preço cobrado? Sim se disse que compraria ou se o máximo dela chega ao preço."""
+    if compraria == "sim":
+        return True
+    return preco_maximo is not None and preco_maximo >= preco_ofertado * TOLERANCIA_PRECO
+
+
+def avaliar_preco(por_persona: list[IndicadorPersona], preco_ofertado: float) -> tuple[int, str, float | None, float | None]:
+    """Devolve (quantos aceitam, avaliação, preço de referência, mediana do máximo).
+
+    Se a MAIORIA pagaria o preço cobrado, ele é o preço de referência ("preço ideal"): não faz sentido
+    mostrar uma média alguns centavos abaixo. Se a maioria não pagaria, mostra a mediana do que pagariam."""
+    if not por_persona or preco_ofertado <= 0:
+        return 0, "sem_dados", None, None
+    aceitam = sum(aceita_preco(p.preco_maximo, p.compraria_r2, preco_ofertado) for p in por_persona)
+    precos = [p.preco_maximo for p in por_persona if p.preco_maximo is not None]
+    mediana = round(median(precos), 2) if precos else None
+    if aceitam > len(por_persona) / 2:
+        if mediana is not None and mediana >= preco_ofertado * MARGEM_PARA_SUBIR:
+            return aceitam, "espaco_para_subir", preco_ofertado, mediana
+        return aceitam, "ideal", preco_ofertado, mediana
+    if mediana is None:
+        return aceitam, "sem_dados", None, None
+    return aceitam, "acima_do_aceito", mediana, mediana
 
 
 def calcular_indicadores(resultado: ResultadoSimulacao, preco_ofertado: float) -> Indicadores:
@@ -55,12 +95,17 @@ def calcular_indicadores(resultado: ResultadoSimulacao, preco_ofertado: float) -
     ]
     r1, r2 = resultado.da_rodada(1), resultado.da_rodada(2)
     precos = [p.preco_maximo for p in por_persona if p.preco_maximo is not None]
+    aceitam, avaliacao, referencia, mediana = avaliar_preco(por_persona, preco_ofertado)
     return Indicadores(
         preco_ofertado=preco_ofertado,
         interesse_medio_r1=round(mean(m.opiniao.interesse for m in r1), 1) if r1 else 0,
         interesse_medio_r2=round(mean(m.opiniao.interesse for m in r2), 1) if r2 else 0,
         decisoes_r2={d: sum(m.opiniao.compraria == d for m in r2) for d in ("sim", "talvez", "nao")},
         preco_maximo_medio=round(mean(precos), 2) if precos else None,
+        preco_maximo_mediano=mediana,
+        aceitam_preco=aceitam,
+        avaliacao_preco=avaliacao,
+        preco_referencia=referencia,
         mudaram_de_posicao=sum(p.mudou for p in por_persona),
         por_persona=por_persona,
     )
@@ -91,6 +136,16 @@ def _formatar_indicadores(ind: Indicadores) -> str:
     ]
     if ind.preco_maximo_medio is not None:
         linhas.append(f"- Preço máximo médio que pagariam: R$ {ind.preco_maximo_medio:.2f}")
+    total = len(ind.por_persona)
+    textos_preco = {
+        "ideal": f"a maioria ({ind.aceitam_preco} de {total}) pagaria o preço cobrado: trate o preço como adequado",
+        "espaco_para_subir": (f"a maioria ({ind.aceitam_preco} de {total}) pagaria o preço cobrado e a mediana do máximo "
+                              f"(R$ {ind.preco_maximo_mediano or 0:.2f}) sugere espaço para subir com cuidado"),
+        "acima_do_aceito": (f"só {ind.aceitam_preco} de {total} pagariam o preço cobrado; a mediana do que pagariam é "
+                            f"R$ {ind.preco_referencia or 0:.2f}"),
+        "sem_dados": "sem dados suficientes sobre preço",
+    }
+    linhas.append(f"- Avaliação do preço: {textos_preco[ind.avaliacao_preco]}")
     for p in ind.por_persona:
         linhas.append(
             f"- {p.persona_nome}: interesse {p.interesse_r1} → {p.interesse_r2}, "

@@ -35,7 +35,7 @@ Régua da nota de interesse (use a régua inteira, não fique no meio por padrã
 - 9 a 10: compraria já
 Use 5 apenas se estiver realmente dividido; prefira se posicionar.
 Coerência: "compraria": "sim" exige interesse 7 ou mais; "compraria": "nao" exige interesse 4 ou menos.
-Em "preco_maximo", diga quanto você pagaria de verdade por este produto (pode ser menor que o preço cobrado).
+Em "preco_maximo", diga quanto você pagaria de verdade por este produto. Se você acha o preço justo e pagaria por ele, "preco_maximo" deve ser NO MÍNIMO o preço cobrado (não tire alguns reais por hábito); se acha barato, pode ser maior; só fique abaixo do preço cobrado se ele for caro para você.
 Em "o_que_mudaria", proponha UMA mudança realista que o dono deste negócio conseguiria fazer (no preço, na oferta, no atendimento, na divulgação ou na forma de comprar) e que resolveria a sua principal objeção."""
 
 
