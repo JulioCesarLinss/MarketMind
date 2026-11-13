@@ -14,7 +14,7 @@ from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
-from app.agents.personas import MAX_AGENTES, MIN_AGENTES, PADRAO_AGENTES, PERSONAS, escolher_personas
+from app.agents.personas import PERSONAS, escolher_personas
 from app.agents.pesquisador import Pesquisador
 from app.config import settings
 from app.llm import criar_provider
@@ -54,7 +54,7 @@ class PersonaPublica(BaseModel):
 
 @router.get("/personas", response_model=list[PersonaPublica], tags=["personas"])
 def listar_personas():
-    """Todas as personas disponíveis (até 8), na ordem em que entram na simulação."""
+    """As 5 personas, para o frontend montar a escolha e os cards do feed."""
     return [PersonaPublica(id=p.id, nome=p.nome, descricao=p.descricao, prioridades=p.prioridades)
             for p in PERSONAS.values()]
 
@@ -63,9 +63,14 @@ def listar_personas():
 async def criar_simulacao(
     negocio: NegocioEntrada,
     demo: bool = Query(False, description="true = respostas gravadas (sem IA, sem gastar cota). Bom para desenvolver o front."),
-    agentes: int = Query(PADRAO_AGENTES, ge=MIN_AGENTES, le=MAX_AGENTES,
-                         description="Quantos consumidores participam (as N primeiras personas de GET /personas)"),
+    personas: list[str] | None = Query(
+        None, description="Ids das personas que participam (repita o parâmetro: ?personas=economico&personas=critico). "
+                          "Mínimo 2. Sem o parâmetro, participam todas."),
 ):
+    try:
+        escolhidas = escolher_personas(personas)
+    except ValueError as erro:
+        raise HTTPException(status_code=422, detail=str(erro)) from erro
     try:
         provider = criar_provider("mock" if demo else None)
     except ConfiguracaoLLMError as erro:
@@ -76,7 +81,7 @@ async def criar_simulacao(
     except ConfiguracaoLLMError:
         analista = None  # o resultado vem só com os números do relatório
     pesquisador = PesquisadorDemo() if demo else _pesquisador_real()
-    sim = gerenciador.iniciar(negocio.model_dump(), provider, analista, pesquisador, escolher_personas(agentes))
+    sim = gerenciador.iniciar(negocio.model_dump(), provider, analista, pesquisador, escolhidas)
     return SimulacaoCriada(id=sim.id, status=sim.status, personas=sim.personas)
 
 

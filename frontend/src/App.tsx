@@ -36,7 +36,7 @@ export default function App() {
     ? personas.filter((p) => participantes.includes(p.id))
     : personas
 
-  async function avaliar(negocio: NegocioPayload, demo: boolean, agentes: number) {
+  async function avaliar(negocio: NegocioPayload, demo: boolean, escolhidas: string[]) {
     setCarregando(true)
     setErroFormulario('')
     setErroFeed('')
@@ -44,13 +44,13 @@ export default function App() {
     setResultado(null)
     setPesquisa(null)
     setRodadaAtual(1)
-    setStatusTexto(`Iniciando os ${agentes} agentes...`)
+    setStatusTexto(`Iniciando os ${escolhidas.length} agentes...`)
     fonteRef.current?.close()
     fonteRef.current = null
 
     try {
-      const simulacao = await criarSimulacao(negocio, demo, agentes)
-      setParticipantes(simulacao.personas ?? personas.slice(0, agentes).map((p) => p.id))
+      const simulacao = await criarSimulacao(negocio, demo, escolhidas)
+      setParticipantes(simulacao.personas ?? escolhidas)
       setTela('debate')
       setStatusTexto('Os agentes estão lendo as informações do produto...')
 

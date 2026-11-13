@@ -1,15 +1,6 @@
+import { iconePersona } from '../personaIcones'
 import type { MensagemDebate } from '../types'
 
-const icones: Record<string, string> = {
-  economico: '₱',
-  exigente: '✦',
-  ocupado: '◷',
-  critico: '⌕',
-  fiel_regiao: '⌖',
-  conectado: '✧',
-  familia: '⌂',
-  consciente: '❀',
-}
 
 interface MessageCardProps {
   mensagem: MensagemDebate
@@ -22,7 +13,7 @@ export default function MessageCard({ mensagem, indice, mudouDePosicao: mudou }:
 
   return (
     <article className="message-card" style={{ animationDelay: `${Math.min(indice * 45, 360)}ms` }}>
-      <div className="message-avatar">{icones[mensagem.persona_id] || '✳'}</div>
+      <div className="message-avatar">{iconePersona(mensagem.persona_id)}</div>
       <div className="message-content">
         <div className="message-heading">
           <div>

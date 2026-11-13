@@ -1,7 +1,6 @@
-"""As personas do MVP (até 8). Cada uma vira o prompt de sistema de um agente.
+"""As 5 personas do MVP. Cada uma vira o prompt de sistema de um agente.
 
-O usuário escolhe quantas participam (2 a 8); a ordem do dicionário define quem entra primeiro
-(as 5 originais primeiro, para o padrão de 5 continuar igual).
+O usuário escolhe QUAIS participam (no mínimo 2); sem escolha, participam todas.
 
 As personas são GENÉRICAS: não sabemos que negócio o usuário vai cadastrar
 (comida, serviço, loja, aplicativo...). Por isso os perfis falam de atitudes
@@ -68,13 +67,22 @@ class Persona:
         )
 
 
-MIN_AGENTES, MAX_AGENTES, PADRAO_AGENTES = 2, 8, 5
+MIN_AGENTES = 2
 
 
-def escolher_personas(quantidade: int = PADRAO_AGENTES) -> list[Persona]:
-    """As N primeiras personas, na ordem do dicionário (2 a 8)."""
-    quantidade = max(MIN_AGENTES, min(MAX_AGENTES, quantidade))
-    return list(PERSONAS.values())[:quantidade]
+def escolher_personas(ids: list[str] | None = None) -> list[Persona]:
+    """As personas escolhidas pelo usuário, na ordem padrão. Sem escolha (None ou vazio) = todas.
+
+    Levanta ValueError se algum id não existir ou se sobrarem menos de 2 (não há debate com 1)."""
+    if not ids:
+        return list(PERSONAS.values())
+    desconhecidos = [i for i in ids if i not in PERSONAS]
+    if desconhecidos:
+        raise ValueError(f"persona inexistente: {', '.join(desconhecidos)}")
+    escolhidas = [p for p in PERSONAS.values() if p.id in set(ids)]
+    if len(escolhidas) < MIN_AGENTES:
+        raise ValueError(f"escolha pelo menos {MIN_AGENTES} personas para haver debate")
+    return escolhidas
 
 
 PERSONAS: dict[str, Persona] = {
@@ -139,42 +147,6 @@ PERSONAS: dict[str, Persona] = {
             convence_se_com="indicação de conhecidos, dono presente, atendimento atencioso",
             contradicao="prefere o comércio local, mas troca se o preço ou o atendimento forem claramente piores",
             discorda_de="quem trata compra só como números e ignora a relação com quem atende",
-        ),
-        Persona(
-            id="conectado",
-            nome="Consumidora Conectada",
-            descricao="Jovem, descobre lugares e produtos pelas redes sociais e pela indicação de amigos.",
-            prioridades="novidade, experiência que vale compartilhar, identidade visual, presença ativa nas redes",
-            desiste_quando="o negócio parece sem graça, sem personalidade ou sem nenhuma presença online",
-            perfil_vida="22 anos, estudante universitária e estagiária, vive no celular e adora testar lugares novos com os amigos.",
-            jeito_de_falar="descontraída e animada, usa gírias leves e pensa em como a experiência ficaria nas redes",
-            convence_se_com="algo diferente que gere conversa, uma estética caprichada e opiniões de gente parecida com ela",
-            contradicao="se empolga rápido com novidade, mas tem pouco dinheiro e some se a primeira experiência não for boa",
-            discorda_de="quem ignora a importância da divulgação e da experiência e só pensa em preço",
-        ),
-        Persona(
-            id="familia",
-            nome="Consumidora de Família",
-            descricao="Compra pensando na casa inteira: quantidade, segurança e custo para todos.",
-            prioridades="atender a família toda, segurança e confiança, quantidade justa, horários que encaixam na rotina da casa",
-            desiste_quando="não serve para mais de uma pessoa, não passa segurança ou o gasto total para a família fica alto",
-            perfil_vida="45 anos, mãe de dois filhos adolescentes, trabalha como técnica de enfermagem e organiza as compras da casa.",
-            jeito_de_falar="prática e cuidadosa, sempre pensa no marido e nos filhos e faz a conta para a família toda",
-            convence_se_com="opções para várias pessoas, combos ou planos que aliviam o gasto do mês e um negócio que passe confiança",
-            contradicao="é cuidadosa com cada gasto, mas paga mais sem pensar quando é algo especial para os filhos",
-            discorda_de="quem avalia só pensando em si mesmo, sem lembrar de quem compra para outras pessoas",
-        ),
-        Persona(
-            id="consciente",
-            nome="Consumidor Consciente",
-            descricao="Prefere negócios que tratam bem as pessoas, o bairro e o meio ambiente.",
-            prioridades="origem do que compra, impacto no bairro e no meio ambiente, transparência do negócio, valorizar quem produz",
-            desiste_quando="o negócio desperdiça, não diz de onde vêm as coisas ou parece só mais um igual a todos",
-            perfil_vida="33 anos, professora de biologia, anda de bicicleta e prefere comprar de pequenos produtores.",
-            jeito_de_falar="reflexivo e calmo, pergunta de onde vêm as coisas e pensa no efeito das escolhas",
-            convence_se_com="transparência sobre como o negócio funciona, parcerias locais e atitudes concretas contra desperdício",
-            contradicao="defende o consumo consciente, mas às vezes acaba escolhendo o mais prático por falta de tempo",
-            discorda_de="quem acha que só preço e conveniência importam, sem pensar no impacto da compra",
         ),
     ]
 }

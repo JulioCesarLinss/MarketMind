@@ -35,7 +35,7 @@ class Orquestrador:
         semente: int | None = None,
     ):
         self.provider = provider
-        self.personas = personas or escolher_personas()  # padrão: 5
+        self.personas = personas or escolher_personas()  # padrão: todas
         self.semaforo = asyncio.Semaphore(concorrencia or settings.llm_concorrencia)
         self.ao_publicar = ao_publicar
         # Embaralha a ordem das falas na rodada 2 (semente fixa = resultado reproduzível nos testes)

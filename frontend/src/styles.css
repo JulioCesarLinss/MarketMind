@@ -177,13 +177,11 @@ a { color: inherit; text-decoration: none; }
 .agent-card { min-width: 0; padding: 17px 18px 15px; border: 1px solid #e8e9f0; border-radius: 12px; background: #fff; box-shadow: 0 7px 20px rgba(35, 36, 62, .025); animation: fade-up .35s ease both; }
 .agent-card-top { display: flex; align-items: center; gap: 11px; }
 .agent-avatar, .message-avatar { position: relative; width: 38px; height: 38px; flex: 0 0 38px; display: grid; place-items: center; border-radius: 12px; background: #efedff; color: #685dca; font-size: 17px; font-weight: 700; }
+.avatar-economico { background: #efedff; color: #685dca; }
 .avatar-exigente { background: #fff2e8; color: #b57a49; }
 .avatar-ocupado { background: #e8f5ef; color: #448c71; }
 .avatar-critico { background: #eaf1fb; color: #5d81b3; }
 .avatar-fiel_regiao { background: #f9eaf1; color: #ae6889; }
-.avatar-conectado { background: #f3e9fb; color: #8a5db3; }
-.avatar-familia { background: #fbf6e3; color: #a38a2c; }
-.avatar-consciente { background: #e8f4f4; color: #3f8a8a; }
 .agent-identity { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
 .agent-identity strong { color: #44495a; font-size: 11px; }
 .agent-identity > span { overflow: hidden; color: #a0a4b0; font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
@@ -588,13 +586,31 @@ a { color: inherit; text-decoration: none; }
   }
 }
 
-/* Quantidade de agentes e entrega (formulário) */
-.agents-picker { display: flex; flex-direction: column; gap: 8px; margin: 4px 0 18px; }
-.agents-picker-row { display: flex; align-items: center; gap: 12px; }
-.agents-picker input[type="range"] { flex: 1; accent-color: #7167d0; }
-.agents-picker-value { min-width: 34px; text-align: center; font-weight: 700; color: #4f46a5; font-size: 15px; }
-.agents-picker-names { color: #676d7d; font-size: 11px; line-height: 1.5; }
+/* Entrega e escolha dos consumidores (formulário) */
 .delivery-box { margin: 4px 0 18px; padding: 14px 15px; border: 1px solid #e8e9f0; border-radius: 10px; background: #fbfbfe; }
 .delivery-box .check-row { margin-bottom: 0; }
 .delivery-grid { margin-top: 12px; }
-.delivery-grid select { width: 100%; height: 39px; border: 1px solid #e3e4ec; border-radius: 8px; background: #fff; padding: 0 10px; font: inherit; font-size: 13px; color: inherit; }
+.delivery-grid select {
+  width: 100%; height: 43px; padding: 0 34px 0 13px; border: 1px solid #e6e8ef; border-radius: 8px; outline: none;
+  background: #fbfbfd url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%239a9eac' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 13px center;
+  color: #323647; font: inherit; font-size: 12px; appearance: none; cursor: pointer; transition: border-color .2s, box-shadow .2s, background-color .2s;
+}
+.delivery-grid select:focus { border-color: #a49be9; background-color: #fff; box-shadow: 0 0 0 3px rgba(117, 107, 208, .09); }
+
+.persona-picker { margin: 0 0 18px; padding: 0; border: 0; min-width: 0; }
+.persona-picker legend { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; width: 100%; margin-bottom: 9px; padding: 0; }
+.persona-picker legend strong { color: #505566; font-size: 11px; font-weight: 700; }
+.persona-picker legend small { color: #a0a4af; font-size: 10px; }
+.persona-options { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.persona-option {
+  display: flex; align-items: center; gap: 9px; min-width: 0; padding: 8px 10px; border: 1px solid #e6e8ef; border-radius: 10px;
+  background: #fbfbfd; color: #8a8e9c; text-align: left; cursor: pointer; transition: border-color .2s, background .2s, color .2s, box-shadow .2s;
+}
+.persona-option:hover { border-color: #cfcaf3; }
+.persona-option:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(117, 107, 208, .15); }
+.persona-option-icon { width: 28px; height: 28px; flex: 0 0 28px; display: grid; place-items: center; border-radius: 9px; font-size: 13px; font-weight: 700; opacity: .45; transition: opacity .2s; }
+.persona-option-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; font-weight: 600; }
+.persona-option-check { width: 16px; height: 16px; flex: 0 0 16px; display: grid; place-items: center; border: 1px solid #d9dbe5; border-radius: 5px; background: #fff; color: #fff; font-size: 10px; font-weight: 700; }
+.persona-option.is-selected { border-color: #b9b2ef; background: #f6f5ff; color: #3d4152; }
+.persona-option.is-selected .persona-option-icon { opacity: 1; }
+.persona-option.is-selected .persona-option-check { border-color: #7770d4; background: #7770d4; }

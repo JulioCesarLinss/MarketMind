@@ -1,15 +1,6 @@
+import { iconePersona } from '../personaIcones'
 import type { MensagemDebate, PersonaPublica } from '../types'
 
-const icones: Record<string, string> = {
-  economico: '₱',
-  exigente: '✦',
-  ocupado: '◷',
-  critico: '⌕',
-  fiel_regiao: '⌖',
-  conectado: '✧',
-  familia: '⌂',
-  consciente: '❀',
-}
 
 interface AgentCardProps {
   persona: PersonaPublica
@@ -34,7 +25,7 @@ export default function AgentCard({ persona, mensagens, rodadaAtual, finalizado 
     <article className={`agent-card ${pensando ? 'agent-thinking' : 'agent-answered'}`}>
       <div className="agent-card-top">
         <div className={`agent-avatar avatar-${persona.id}`}>
-          <span>{icones[persona.id] || '✳'}</span>
+          <span>{iconePersona(persona.id)}</span>
           {pensando && <i className="avatar-pulse" />}
         </div>
         <div className="agent-identity">

@@ -44,7 +44,7 @@ Agente pesquisador ──► busca na internet preços de negócios parecidos na
 Agente de contexto ──► organiza dados do negócio + concorrentes + referência de mercado, identificando a origem de cada dado
         │
         ▼
-Consumidores sintéticos (2 a 8 personas, à escolha do usuário; padrão 5; cada uma com prompt e memória próprios)
+Consumidores sintéticos (até 5 personas, o usuário escolhe quais, mínimo 2; cada uma com prompt e memória próprios)
         │   Rodada 1: cada persona avalia a oferta individualmente
         │   Rodada 2: cada persona reage às opiniões das outras
         ▼
@@ -66,7 +66,7 @@ Interface: feed do debate em tempo real + relatório final
 |---|---|---|
 | Agente pesquisador | Busca preços na internet (Tavily) e conta lojas do ramo no OpenStreetMap; calcula média, desvio-padrão e a posição do preço | Sim (planeja a busca e lê os preços; os números são calculados pelo código) |
 | Agente de contexto | Padroniza as informações do negócio, dos concorrentes e da referência de mercado | Não |
-| Personas | Avaliam a oferta segundo prioridades próprias (preço, qualidade, conveniência, diferenciação, proximidade, redes sociais, família, consumo consciente) | Sim |
+| Personas | Avaliam a oferta segundo prioridades próprias (preço, qualidade, conveniência, diferenciação, proximidade) | Sim |
 | Moderador / orquestrador | Coordena rodadas e chamadas em paralelo, mantém o histórico | Não |
 | Agente analista | Gera o relatório a partir do histórico real do debate | Sim |
 | Calculadora financeira | Fórmulas determinísticas sobre os custos informados | Não |

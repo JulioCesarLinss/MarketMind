@@ -6,7 +6,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.agents.exemplos import NEGOCIOS
-from app.agents.personas import PADRAO_AGENTES, PERSONAS
+from app.agents.personas import PERSONAS
 from app.main import app
 
 
@@ -45,8 +45,8 @@ def test_simulacao_demo_completa(client):
 
     eventos = ler_eventos(client, id_)
     mensagens = [json.loads(d) for t, d in eventos if t == "mensagem"]
-    assert len(mensagens) == 2 * PADRAO_AGENTES
-    assert criada.json()["personas"] == list(PERSONAS)[:PADRAO_AGENTES]
+    assert len(mensagens) == 2 * len(PERSONAS)
+    assert criada.json()["personas"] == list(PERSONAS)
     assert eventos[-1][0] == "fim"
     assert eventos[-2] == ("etapa", '{"etapa": "analise"}')  # aviso antes do relatório
     # Pesquisa de mercado vem antes da primeira fala
@@ -60,7 +60,7 @@ def test_simulacao_demo_completa(client):
 
     estado = client.get(f"/simulacoes/{id_}").json()
     assert estado["status"] == "concluida"
-    assert len(estado["mensagens"]) == 2 * PADRAO_AGENTES
+    assert len(estado["mensagens"]) == 2 * len(PERSONAS)
 
     # Quem conecta depois do fim recebe tudo de novo (ex.: recarregou a página)
     assert len(ler_eventos(client, id_)) == len(eventos)
@@ -86,15 +86,15 @@ def test_cors_libera_o_vite(client):
     assert resposta.headers.get("access-control-allow-origin") == "http://localhost:5173"
 
 
-def test_escolhe_quantos_agentes(client):
-    criada = client.post("/simulacoes?demo=true&agentes=3", json=NEGOCIOS["barbearia"]).json()
-    assert criada["personas"] == list(PERSONAS)[:3]
+def test_escolhe_quais_personas(client):
+    rota = "/simulacoes?demo=true&personas=critico&personas=economico&personas=fiel_regiao"
+    criada = client.post(rota, json=NEGOCIOS["barbearia"]).json()
+    assert criada["personas"] == ["economico", "critico", "fiel_regiao"]  # na ordem padrão
     mensagens = [json.loads(d) for t, d in ler_eventos(client, criada["id"]) if t == "mensagem"]
-    assert len(mensagens) == 6 and {m["persona_id"] for m in mensagens} == set(list(PERSONAS)[:3])
-    criada = client.post("/simulacoes?demo=true&agentes=8", json=NEGOCIOS["barbearia"]).json()
-    assert len(criada["personas"]) == 8
-    assert client.post("/simulacoes?demo=true&agentes=1", json=NEGOCIOS["barbearia"]).status_code == 422
-    assert client.post("/simulacoes?demo=true&agentes=9", json=NEGOCIOS["barbearia"]).status_code == 422
+    assert len(mensagens) == 6 and {m["persona_id"] for m in mensagens} == {"economico", "critico", "fiel_regiao"}
+    # só 1 persona ou id inexistente → 422
+    assert client.post("/simulacoes?demo=true&personas=critico", json=NEGOCIOS["barbearia"]).status_code == 422
+    assert client.post("/simulacoes?demo=true&personas=critico&personas=xyz", json=NEGOCIOS["barbearia"]).status_code == 422
 
 
 def test_entrega_no_formulario(client):

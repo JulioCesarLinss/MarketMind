@@ -1,9 +1,8 @@
 import { useState, type FormEvent } from 'react'
+import { iconePersona } from '../personaIcones'
 import {
-  MAX_AGENTES,
   MIN_AGENTES,
   MODELOS_ENTREGA,
-  PADRAO_AGENTES,
   type ModeloEntrega,
   type NegocioPayload,
   type PersonaPublica,
@@ -19,7 +18,7 @@ interface HomePageProps {
   personas: PersonaPublica[]
   carregando: boolean
   erro: string
-  aoAvaliar: (negocio: NegocioPayload, demo: boolean, agentes: number) => void
+  aoAvaliar: (negocio: NegocioPayload, demo: boolean, personas: string[]) => void
 }
 
 const concorrenteVazio = (): ConcorrenteRascunho => ({ nome: '', preco: '', observacao: '' })
@@ -38,15 +37,23 @@ export default function HomePage({ personas, carregando, erro, aoAvaliar }: Home
   const [taxa, setTaxa] = useState('0')
   const [concorrentes, setConcorrentes] = useState<ConcorrenteRascunho[]>([])
   const [demo, setDemo] = useState(true)
-  const [agentes, setAgentes] = useState(PADRAO_AGENTES)
+  // Personas que o usuário DESMARCOU (começa com todas marcadas, mesmo antes de a lista chegar da API)
+  const [desmarcadas, setDesmarcadas] = useState<string[]>([])
   const [entrega, setEntrega] = useState(false)
   const [modeloEntrega, setModeloEntrega] = useState<ModeloEntrega>('proprio')
   const [taxaEntrega, setTaxaEntrega] = useState('')
   const [prazoEntrega, setPrazoEntrega] = useState('')
   const [areaEntrega, setAreaEntrega] = useState('')
   const [garantiasEntrega, setGarantiasEntrega] = useState('')
-  const maxAgentes = personas.length ? Math.min(MAX_AGENTES, personas.length) : MAX_AGENTES
-  const nomesAgentes = personas.slice(0, agentes).map((p) => p.nome.replace(/^Consumidora? /, ''))
+  const escolhidas = personas.filter((p) => !desmarcadas.includes(p.id)).map((p) => p.id)
+
+  function alternarPersona(id: string) {
+    if (desmarcadas.includes(id)) {
+      setDesmarcadas((atuais) => atuais.filter((item) => item !== id))
+    } else if (escolhidas.length > MIN_AGENTES) {
+      setDesmarcadas((atuais) => [...atuais, id])
+    }
+  }
 
   function atualizarConcorrente(indice: number, campo: keyof ConcorrenteRascunho, valor: string) {
     setConcorrentes((atuais) => atuais.map((item, i) =>
@@ -90,7 +97,7 @@ export default function HomePage({ personas, carregando, erro, aoAvaliar }: Home
         })),
     }
 
-    aoAvaliar(negocio, demo, agentes)
+    aoAvaliar(negocio, demo, escolhidas)
   }
 
   return (
@@ -111,7 +118,7 @@ export default function HomePage({ personas, carregando, erro, aoAvaliar }: Home
         <section className="hero-section">
           <div className="hero-copy">
             <span className="eyebrow"><span className="eyebrow-line" /> SIMULE ANTES DE INVESTIR</span>
-            <h1>Uma ideia.<br /><span>Várias perspectivas.</span></h1>
+            <h1>Uma ideia.<br /><span>Cinco perspectivas.</span></h1>
             <p>
               Descubra como diferentes perfis de consumidores podem reagir ao seu produto,
               debater a oferta e apontar o que merece ser validado.
@@ -120,7 +127,7 @@ export default function HomePage({ personas, carregando, erro, aoAvaliar }: Home
               <div className="avatar-stack" aria-hidden="true">
                 <span>₱</span><span>✦</span><span>◷</span><span>⌕</span><span>⌖</span>
               </div>
-              <span><strong>De {MIN_AGENTES} a {MAX_AGENTES} agentes independentes</strong><br />2 rodadas de avaliação e debate</span>
+              <span><strong>5 agentes independentes</strong><br />2 rodadas de avaliação e debate</span>
             </div>
           </div>
           <div className="hero-visual" aria-hidden="true">
@@ -253,15 +260,34 @@ export default function HomePage({ personas, carregando, erro, aoAvaliar }: Home
               )}
             </div>
 
-            <div className="agents-picker">
-              <label htmlFor="agentes">Quantos consumidores vão avaliar? <span className="agents-picker-value">{agentes}</span></label>
-              <div className="agents-picker-row">
-                <span>{MIN_AGENTES}</span>
-                <input id="agentes" type="range" min={MIN_AGENTES} max={maxAgentes} step={1} value={Math.min(agentes, maxAgentes)} onChange={(e) => setAgentes(Number(e.target.value))} />
-                <span>{maxAgentes}</span>
+            <div className="form-divider"><span>QUEM VAI AVALIAR</span></div>
+
+            <fieldset className="persona-picker">
+              <legend>
+                <strong>Escolha os consumidores</strong>
+                <small>{escolhidas.length} de {personas.length} selecionados · mínimo {MIN_AGENTES}</small>
+              </legend>
+              <div className="persona-options">
+                {personas.map((persona) => {
+                  const marcada = escolhidas.includes(persona.id)
+                  const travada = marcada && escolhidas.length <= MIN_AGENTES
+                  return (
+                    <button
+                      key={persona.id}
+                      type="button"
+                      className={`persona-option${marcada ? ' is-selected' : ''}`}
+                      aria-pressed={marcada}
+                      title={travada ? `Mantenha pelo menos ${MIN_AGENTES} consumidores` : persona.prioridades}
+                      onClick={() => alternarPersona(persona.id)}
+                    >
+                      <span className={`persona-option-icon avatar-${persona.id}`}>{iconePersona(persona.id)}</span>
+                      <span className="persona-option-name">{persona.nome.replace(/^Consumidor /, '')}</span>
+                      <span className="persona-option-check" aria-hidden="true">{marcada ? '✓' : ''}</span>
+                    </button>
+                  )
+                })}
               </div>
-              {nomesAgentes.length > 0 && <span className="agents-picker-names">Participam: {nomesAgentes.join(', ')}. Mais agentes = mais opiniões, mas a simulação demora mais.</span>}
-            </div>
+            </fieldset>
 
             <details className="optional-section">
               <summary>

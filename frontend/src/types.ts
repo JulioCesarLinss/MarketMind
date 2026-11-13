@@ -154,9 +154,7 @@ export interface SimulacaoCriada {
   personas: string[] // ids das personas que participam
 }
 
-export const MIN_AGENTES = 2
-export const MAX_AGENTES = 8
-export const PADRAO_AGENTES = 5
+export const MIN_AGENTES = 2 // mínimo de personas para haver debate
 
 export interface ConcorrentePayload {
   nome: string

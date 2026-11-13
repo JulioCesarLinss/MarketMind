@@ -74,10 +74,13 @@ def test_contexto_mostra_a_entrega():
 
 def test_escolher_personas():
     from app.agents.personas import escolher_personas
-    assert len(escolher_personas()) == 5
-    assert [p.id for p in escolher_personas(2)] == ["economico", "exigente"]
-    assert len(escolher_personas(8)) == len(PERSONAS) == 8
-    assert len(escolher_personas(50)) == 8 and len(escolher_personas(0)) == 2
+    import pytest
+    assert len(PERSONAS) == 5 and len(escolher_personas()) == 5
+    assert [p.id for p in escolher_personas(["ocupado", "economico", "ocupado"])] == ["economico", "ocupado"]
+    with pytest.raises(ValueError):
+        escolher_personas(["economico"])
+    with pytest.raises(ValueError):
+        escolher_personas(["economico", "inexistente"])
 
 
 def test_nenhuma_persona_pede_certificado():

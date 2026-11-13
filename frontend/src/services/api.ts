@@ -40,10 +40,11 @@ export async function buscarPersonas(): Promise<PersonaPublica[]> {
 export async function criarSimulacao(
   negocio: NegocioPayload,
   demo: boolean,
-  agentes: number,
+  personas: string[],
 ): Promise<SimulacaoCriada> {
-  const parametros = new URLSearchParams({ agentes: String(agentes) })
+  const parametros = new URLSearchParams()
   if (demo) parametros.set('demo', 'true')
+  personas.forEach((id) => parametros.append('personas', id))
   const rota = `/simulacoes?${parametros}`
   const resposta = await fetch(`${API_URL}${rota}`, {
     method: 'POST',

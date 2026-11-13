@@ -18,10 +18,10 @@ O CORS já libera `http://localhost:5173` (porta padrão do Vite).
 ## Fluxo
 
 ```
-1. POST /simulacoes?demo=true&agentes=5   (dados do formulário)
+1. POST /simulacoes?demo=true&personas=economico&personas=critico   (dados do formulário)
        →  { "id": "bc7327ef54ca", "status": "rodando", "personas": ["economico", "exigente", ...] }
 2. GET  /simulacoes/{id}/stream  →  feed ao vivo, nesta ordem:
-       etapa {"etapa":"pesquisa"} → pesquisa (referência de mercado) → mensagem × (2 × agentes)
+       etapa {"etapa":"pesquisa"} → pesquisa (referência de mercado) → mensagem × (2 × personas escolhidas)
        → etapa {"etapa":"analise"} → fim (resultado + relatório + pesquisa)
 3. GET  /simulacoes/{id}         →  tudo de uma vez (ex.: ao recarregar a página)
 ```
@@ -29,8 +29,8 @@ O CORS já libera `http://localhost:5173` (porta padrão do Vite).
 | Método | Rota | Para quê |
 |---|---|---|
 | `GET` | `/health` | API está de pé? |
-| `GET` | `/personas` | As 8 personas disponíveis (id, nome, descrição, prioridades), na ordem em que entram |
-| `POST` | `/simulacoes` | Inicia uma simulação. Query `demo=true` = sem IA; `agentes=2..8` (padrão 5) = quantos consumidores participam (as N primeiras de `/personas`). A resposta traz `personas` (ids de quem participa) |
+| `GET` | `/personas` | As 5 personas (id, nome, descrição, prioridades) para montar a escolha e os cards |
+| `POST` | `/simulacoes` | Inicia uma simulação. Query `demo=true` = sem IA; `personas=<id>` repetido = quais consumidores participam (mínimo 2; sem o parâmetro, todos; id inexistente ou só 1 → 422). A resposta traz `personas` (ids de quem participa) |
 | `GET` | `/simulacoes/{id}/stream` | Feed ao vivo (Server-Sent Events) |
 | `GET` | `/simulacoes/{id}` | Estado completo: `status`, `mensagens`, `resultado`, `erro`, `personas` |
 
