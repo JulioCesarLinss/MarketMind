@@ -4,11 +4,12 @@ import DebatePage from './pages/DebatePage'
 import ResultPage from './pages/ResultPage'
 import { buscarPersonas, conectarFeed, criarSimulacao } from './services/api'
 import type { MensagemDebate, NegocioPayload, PersonaPublica, PesquisaMercado, ResultadoSimulacao } from './types'
+import LandingPage from './pages/LandingPage'
 
-type Tela = 'inicio' | 'debate' | 'resultado'
+type Tela = 'apresentacao' | 'inicio' | 'debate' | 'resultado'
 
 export default function App() {
-  const [tela, setTela] = useState<Tela>('inicio')
+  const [tela, setTela] = useState<Tela>('apresentacao')
   const [personas, setPersonas] = useState<PersonaPublica[]>([])
   const [mensagens, setMensagens] = useState<MensagemDebate[]>([])
   const [resultado, setResultado] = useState<ResultadoSimulacao | null>(null)
@@ -20,6 +21,11 @@ export default function App() {
   const [rodadaAtual, setRodadaAtual] = useState<1 | 2>(1)
   const fonteRef = useRef<EventSource | null>(null)
 
+  function abrirFormulario() {
+  window.history.pushState({ tela: 'inicio' }, '')
+  setTela('inicio')
+  }
+
   useEffect(() => {
     buscarPersonas()
       .then(setPersonas)
@@ -28,6 +34,23 @@ export default function App() {
       })
 
     return () => fonteRef.current?.close()
+  }, [])
+
+
+  useEffect(() => {
+  function voltarPagina(evento: PopStateEvent) {
+    if (evento.state?.tela === 'inicio') {
+      setTela('inicio')
+    } else {
+      setTela('apresentacao')
+    }
+  }
+
+  window.addEventListener('popstate', voltarPagina)
+
+  return () => {
+    window.removeEventListener('popstate', voltarPagina)
+  }
   }, [])
 
   // Só as personas que participam desta simulação (o usuário escolhe quantas)
@@ -109,6 +132,14 @@ export default function App() {
     setErroFormulario('')
     setRodadaAtual(1)
     setStatusTexto('Preparando os agentes para a avaliação...')
+  }
+
+  if (tela === 'apresentacao') {
+  return (
+    <LandingPage
+      onComecar={abrirFormulario}
+    />
+  )
   }
 
   if (tela === 'resultado' && resultado) {
