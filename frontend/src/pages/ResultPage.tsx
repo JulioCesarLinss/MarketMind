@@ -216,7 +216,7 @@ export default function ResultPage({ personas, resultado, onNovaAvaliacao }: Res
           <span>i</span>
           <p><strong>Importante:</strong> {relatorio?.aviso || 'os resultados representam percepções de consumidores sintéticos, não uma amostra estatística nem uma previsão de vendas. Use os pontos levantados como hipóteses para testar com clientes reais.'}</p>
         </div>
-        <button className="evaluate-button new-evaluation-button" onClick={onNovaAvaliacao}>Avaliar outra ideia <span>↗</span></button>
+        <button className="evaluate-button new-evaluation-button" onClick={onNovaAvaliacao}>Avaliar outra ideia</button>
       </main>
     </div>
   )
