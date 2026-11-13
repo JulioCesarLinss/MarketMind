@@ -100,6 +100,7 @@ export interface PesquisaMercado {
   duracao_segundos: number
   gerada_em: string
   erro: string | null
+  observacao?: string // ex.: possível negócio único na região
   aviso: string
 }
 
@@ -123,6 +124,10 @@ export interface Indicadores {
   interesse_medio_r2: number
   decisoes_r2: { sim: number; talvez: number; nao: number }
   preco_maximo_medio: number | null
+  preco_maximo_mediano?: number | null
+  aceitam_preco?: number // quantas personas pagariam o preço cobrado
+  avaliacao_preco?: 'ideal' | 'espaco_para_subir' | 'acima_do_aceito' | 'sem_dados'
+  preco_referencia?: number | null // o preço cobrado (se a maioria aceita) ou a mediana do que pagariam
   mudaram_de_posicao: number
   por_persona: IndicadorPersona[]
 }

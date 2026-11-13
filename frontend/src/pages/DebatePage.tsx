@@ -62,7 +62,7 @@ export default function DebatePage({ personas, mensagens, rodadaAtual, pesquisa,
                 {pesquisa.posicao?.faixa_mais_proxima && <> · seu preço está mais perto da faixa <strong>{NOMES_FAIXA[pesquisa.posicao.faixa_mais_proxima]}</strong></>}
               </p>
             ) : (
-              <p>{pesquisa.erro || 'Nenhum preço comparável encontrado na internet.'} Os agentes seguem com os dados do formulário.</p>
+              <p>{pesquisa.observacao || pesquisa.erro || 'Nenhum preço comparável encontrado na internet.'} Os agentes seguem com os dados do formulário.</p>
             )}
           </div>
         )}
