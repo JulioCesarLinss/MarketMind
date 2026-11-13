@@ -1,4 +1,6 @@
 
+import { imagemPersona } from '../personaIcones'
+
 interface LandingPageProps {
   onComecar: () => void
 }
@@ -29,31 +31,31 @@ const etapas = [
 
 const perfis = [
   {
-    icone: '₱',
+    id: 'economico',
     nome: 'Econômico',
     descricao: 'Analisa preços e custo-benefício.',
     classe: 'economico',
   },
   {
-    icone: '✦',
+    id: 'exigente',
     nome: 'Exigente',
     descricao: 'Valoriza qualidade e experiência.',
     classe: 'exigente',
   },
   {
-    icone: '◷',
+    id: 'ocupado',
     nome: 'Ocupado',
     descricao: 'Prioriza praticidade e conveniência.',
     classe: 'ocupado',
   },
   {
-    icone: '⌕',
+    id: 'critico',
     nome: 'Crítico',
     descricao: 'Questiona diferenciais e concorrentes.',
     classe: 'critico',
   },
   {
-    icone: '⌖',
+    id: 'fiel_regiao',
     nome: 'Fiel à região',
     descricao: 'Valoriza proximidade e confiança.',
     classe: 'fiel',
@@ -81,7 +83,7 @@ export default function LandingPage({ onComecar }: LandingPageProps) {
           className="landing-header-button"
           onClick={onComecar}
         >
-          Começar agora <span>↗</span>
+          Começar agora
         </button>
       </header>
 
@@ -115,7 +117,7 @@ export default function LandingPage({ onComecar }: LandingPageProps) {
                 className="landing-primary-button"
                 onClick={onComecar}
               >
-                Avaliar minha ideia <span>↗</span>
+                Avaliar minha ideia <span>➤</span>
               </button>
 
               <a href="#proposta" className="landing-secondary-button">
@@ -144,12 +146,22 @@ export default function LandingPage({ onComecar }: LandingPageProps) {
             <div className="landing-orbit landing-orbit-wide" />
             <div className="landing-orbit landing-orbit-tall" />
 
-            <div className="landing-electron landing-outer outer-one">₱</div>
-            <div className="landing-electron landing-outer outer-two">✦</div>
-            <div className="landing-electron landing-outer outer-three">⌖</div>
+            <div className="landing-electron landing-outer outer-one">
+              <img src={imagemPersona('fiel_regiao')} alt="Fiel" />
+            </div>
+            <div className="landing-electron landing-outer outer-two">
+              <img src={imagemPersona('critico')} alt="Crítico" />
+            </div>
+            <div className="landing-electron landing-outer outer-three">
+              <img src={imagemPersona('ocupado')} alt="Ocupado" />
+            </div>
 
-            <div className="landing-electron landing-inner inner-one">◷</div>
-            <div className="landing-electron landing-inner inner-two">⌕</div>
+            <div className="landing-electron landing-inner inner-one">
+              <img src={imagemPersona('economico')} alt="Economico" />
+            </div>
+            <div className="landing-electron landing-inner inner-two">
+              <img src={imagemPersona('exigente')} alt="Exigente" />
+            </div>
 
             <div className="landing-nucleus">
               <img
@@ -272,7 +284,7 @@ export default function LandingPage({ onComecar }: LandingPageProps) {
                 key={perfil.nome}
               >
                 <div className="landing-persona-icon">
-                  {perfil.icone}
+                  <img src={imagemPersona(perfil.id)} alt="" />
                 </div>
 
                 <h3>{perfil.nome}</h3>
@@ -330,7 +342,7 @@ export default function LandingPage({ onComecar }: LandingPageProps) {
             className="landing-primary-button"
             onClick={onComecar}
           >
-            Começar minha avaliação <span>↗</span>
+            Começar minha avaliação
           </button>
         </section>
       </main>

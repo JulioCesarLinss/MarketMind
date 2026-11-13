@@ -1,12 +1,12 @@
-// Ícone de cada persona (usado no formulário, nos cards dos agentes e no feed)
-export const ICONES_PERSONA: Record<string, string> = {
-  economico: '₱',
-  exigente: '✦',
-  ocupado: '◷',
-  critico: '⌕',
-  fiel_regiao: '⌖',
+
+const IMAGENS_PERSONA: Record<string, string> = {
+  economico: '/economico.svg',
+  exigente: '/exigente.svg',
+  ocupado: '/ocupado.svg',
+  critico: '/critico.svg',
+  fiel_regiao: '/fiel.svg',
 }
 
-export function iconePersona(id: string): string {
-  return ICONES_PERSONA[id] || '✳'
+export function imagemPersona(id: string): string {
+  return IMAGENS_PERSONA[id] || '/favicon.svg'
 }
