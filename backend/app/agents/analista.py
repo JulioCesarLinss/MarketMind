@@ -12,6 +12,7 @@ import time
 from statistics import mean, median
 
 from app.agents.contexto import formatar_negocio
+from app.services.financeiro import calcular_financeiro, formatar_financeiro
 from app.llm.base import LLMProvider
 from app.models.schemas import (
     AnaliseDebate,
@@ -28,10 +29,16 @@ SISTEMA_ANALISTA = """Você é um analista de mercado que ajuda pequenos empreen
 Você recebe: os dados do negócio, o debate entre consumidores sintéticos (2 rodadas) e indicadores já calculados.
 
 Regras:
+- Ignore objeções técnicas que um cliente comum não saberia avaliar (ex.: como um alimento esquenta no micro-ondas); priorize o que importa no dia a dia de quem compra.
 - Baseie-se SOMENTE no debate e nos dados. Cada elogio e objeção deve indicar entre parênteses quem disse (ex.: "(Econômico, Crítico)").
 - Os números já estão calculados: use-os como estão. Não recalcule nem invente números, percentuais ou estatísticas.
 - Priorize o que apareceu em mais de uma persona e o que fez alguém mudar de opinião.
 - Se houver referência de mercado, compare o preço da oferta com as faixas (popular, intermediária, premium) e com o nível de concorrência na região, deixando claro que são valores aproximados da internet.
+- Se houver "Viabilidade financeira", use os números como estão: diga se o preço cobre o custo, se o lucro bate com o esperado,
+  quanto lucraria nos cenários de clientes por dia e, se houver investimento, em quanto tempo se paga. Relacione com o debate e
+  com a concorrência (ex.: "com 20 clientes por dia o lucro seria de R$ X por mês; com concorrência alta, valide esse movimento").
+  NÃO fale em ponto de equilíbrio. Lembre que a conta não inclui impostos nem salários de funcionários e que negócios novos
+  costumam levar meses para lucrar. Sem essa seção, não fale de lucro.
 - Se a oferta tiver entrega, avalie se o modelo informado é confiável para este produto (prazo, taxa, área, riscos) com base no que as personas disseram.
 - Recomendações: concretas, baratas e viáveis para um pequeno negócio DESTE ramo, cada uma ligada a uma objeção. Aproveite as boas sugestões que as próprias personas deram ao dono.
 - Preço: use a "Avaliação do preço" dos indicadores. Se a maioria pagaria o preço cobrado, NÃO recomende baixar o preço.
@@ -154,7 +161,7 @@ def _formatar_indicadores(ind: Indicadores) -> str:
     return "\n".join(linhas)
 
 
-def montar_pedido(negocio: dict, resultado: ResultadoSimulacao, indicadores: Indicadores) -> str:
+def montar_pedido(negocio: dict, resultado: ResultadoSimulacao, indicadores: Indicadores, financeiro=None) -> str:
     rodadas = "\n\n".join(
         f"## Rodada {n}\n" + "\n\n".join(_transcrever(m) for m in resultado.da_rodada(n))
         for n in range(1, resultado.rodadas + 1)
@@ -163,6 +170,8 @@ def montar_pedido(negocio: dict, resultado: ResultadoSimulacao, indicadores: Ind
         f"{formatar_negocio(negocio, resultado.pesquisa)}\n\n"
         f"# Debate entre os consumidores sintéticos\n{rodadas}\n\n"
         f"# Indicadores (já calculados, use como estão)\n{_formatar_indicadores(indicadores)}\n\n"
+        + (f"# Viabilidade financeira (já calculada, use como está)\n{formatar_financeiro(financeiro)}\n\n" if financeiro else "")
+        +
         "Escreva o relatório para o empreendedor."
     )
 
@@ -170,13 +179,14 @@ def montar_pedido(negocio: dict, resultado: ResultadoSimulacao, indicadores: Ind
 async def analisar(provider: LLMProvider | None, negocio: dict, resultado: ResultadoSimulacao) -> Relatorio:
     """Gera o relatório. Se a IA falhar (ou não estiver configurada), devolve só os indicadores."""
     indicadores = calcular_indicadores(resultado, float(negocio.get("preco", 0)))
-    relatorio = Relatorio(indicadores=indicadores)
+    relatorio = Relatorio(indicadores=indicadores,
+                          financeiro=calcular_financeiro(negocio, indicadores, resultado.pesquisa))
     if provider is None:
         relatorio.erro_analise = "Agente analista não configurado (defina LLM_MODEL_ANALISTA no .env)."
         return relatorio
     inicio, tokens_antes = time.perf_counter(), provider.total_tokens()
     try:
-        pedido = montar_pedido(negocio, resultado, indicadores)
+        pedido = montar_pedido(negocio, resultado, indicadores, relatorio.financeiro)
         analise, origem = await provider.gerar_com_origem(
             SISTEMA_ANALISTA, [{"role": "user", "content": pedido}], AnaliseDebate
         )

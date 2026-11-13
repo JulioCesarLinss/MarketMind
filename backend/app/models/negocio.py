@@ -21,11 +21,13 @@ class Concorrente(BaseModel):
 
 
 class Custos(BaseModel):
-    """Usados pela calculadora financeira (ainda não implementada)."""
+    """Dados financeiros (todos opcionais no formulário). Usados pela calculadora em services/financeiro.py."""
 
-    custo_fixo_mensal: float = Field(ge=0)
-    custo_variavel_unitario: float = Field(ge=0, description="Custo para produzir/entregar uma unidade")
+    custo_fixo_mensal: float = Field(default=0, ge=0, description="Aluguel, energia, internet... por mês (impostos e salários não entram na conta)")
+    custo_variavel_unitario: float = Field(default=0, ge=0, description="Custo médio de produção (e entrega) de uma unidade")
     taxa_plataforma_pct: float = Field(default=0, ge=0, le=100, description="Comissão de app/marketplace, em %")
+    lucro_esperado_pct: float | None = Field(default=None, ge=0, lt=100, description="Quanto do preço você espera que vire lucro, em %")
+    investimento_inicial: float | None = Field(default=None, ge=0, description="Quanto vai investir para abrir o negócio (R$)")
 
 
 class Entrega(BaseModel):

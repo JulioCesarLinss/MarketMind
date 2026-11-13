@@ -39,6 +39,8 @@ Sem IA configurada no servidor e sem `demo=true`, o `POST` responde **503**. Dad
 ## 1. Enviar o formulário — `POST /simulacoes`
 
 Campos = formulário do README. `custos`, `entrega` e `concorrentes` são opcionais (no máximo 3 concorrentes).
+Dentro de `custos`, todos os campos são opcionais (padrão 0); `lucro_esperado_pct` (0–99) e `investimento_inicial` (R$) podem ser `null`.
+Com `custos`, o `fim` traz `relatorio.financeiro` (lucro por venda, ponto de equilíbrio, cenários por clientes/dia, tempo para se pagar); sem `custos`, `financeiro` é `null`.
 
 ```json
 {
@@ -48,7 +50,7 @@ Campos = formulário do README. `custos`, `entrega` e `concorrentes` são opcion
   "preco": 85.0,
   "publico": "Homens de 25 a 45 anos que trabalham em escritório",
   "divulgacao": "Instagram e agendamento por aplicativo",
-  "custos": { "custo_fixo_mensal": 12000, "custo_variavel_unitario": 25, "taxa_plataforma_pct": 0 },
+  "custos": { "custo_fixo_mensal": 12000, "custo_variavel_unitario": 25, "taxa_plataforma_pct": 0, "lucro_esperado_pct": 40, "investimento_inicial": 60000 },
   "entrega": { "disponivel": false, "modelo": null, "taxa": null, "prazo": "", "area": "", "garantias": "" },
   "concorrentes": [
     { "nome": "Barbearia de rua", "preco": 35.0, "observacao": "sem agendamento" },

@@ -65,7 +65,7 @@ def test_rodada_2_mostra_objecao_e_sugestao_dos_outros():
 def test_contexto_mostra_a_entrega():
     from app.agents.contexto import formatar_negocio
     base = {"tipo": "Marmitaria", "preco": 20}
-    assert "Entrega: não informada" in formatar_negocio(base)
+    assert "Entrega: sem detalhes" in formatar_negocio(base)
     assert "não faz entrega" in formatar_negocio({**base, "entrega": {"disponivel": False}})
     texto = formatar_negocio({**base, "entrega": {"disponivel": True, "modelo": "proprio", "taxa": 0,
                                                   "prazo": "40 min", "area": "até 3 km", "garantias": "bolsa térmica"}})
@@ -97,3 +97,19 @@ def test_so_as_5_originais_sao_usadas():
     assert [p.id for p in escolher_personas()] == originais
     assert set(PERSONAS_NAO_APROVADAS) == {"conectado", "familia", "consciente"}
     assert not set(PERSONAS_NAO_APROVADAS) & set(PERSONAS)
+
+
+def test_personas_pensam_como_cliente_comum():
+    for p in PERSONAS.values():
+        assert "CLIENTE COMUM" in p.prompt_sistema()
+    assert "técnica" not in PERSONAS["exigente"].convence_se_com
+
+
+
+def test_personas_nao_cobram_prova_do_que_foi_descrito():
+    for p in PERSONAS.values():
+        prompt = p.prompt_sistema()
+        assert "é VERDADE para esta simulação" in prompt and "NÃO reclame de falta de fotos" in prompt
+    critico, exigente = PERSONAS["critico"], PERSONAS["exigente"]
+    assert "comprovado" not in critico.prioridades and "irônico" not in critico.jeito_de_falar
+    assert "avaliações" not in exigente.convence_se_com

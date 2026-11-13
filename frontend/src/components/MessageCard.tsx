@@ -1,4 +1,5 @@
-import { iconePersona } from '../personaIcones'
+
+import { imagemPersona } from '../personaIcones'
 import type { MensagemDebate } from '../types'
 
 
@@ -13,7 +14,7 @@ export default function MessageCard({ mensagem, indice, mudouDePosicao: mudou }:
 
   return (
     <article className="message-card" style={{ animationDelay: `${Math.min(indice * 45, 360)}ms` }}>
-      <div className="message-avatar">{iconePersona(mensagem.persona_id)}</div>
+      <div className="message-avatar"><img src={imagemPersona(mensagem.persona_id)} alt="" /></div>
       <div className="message-content">
         <div className="message-heading">
           <div>

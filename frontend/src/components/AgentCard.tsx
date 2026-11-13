@@ -1,4 +1,5 @@
-import { iconePersona } from '../personaIcones'
+
+import { imagemPersona } from '../personaIcones'
 import type { MensagemDebate, PersonaPublica } from '../types'
 
 
@@ -25,7 +26,7 @@ export default function AgentCard({ persona, mensagens, rodadaAtual, finalizado 
     <article className={`agent-card ${pensando ? 'agent-thinking' : 'agent-answered'}`}>
       <div className="agent-card-top">
         <div className={`agent-avatar avatar-${persona.id}`}>
-          <span>{iconePersona(persona.id)}</span>
+          <img src={imagemPersona(persona.id)} alt="" />
           {pensando && <i className="avatar-pulse" />}
         </div>
         <div className="agent-identity">

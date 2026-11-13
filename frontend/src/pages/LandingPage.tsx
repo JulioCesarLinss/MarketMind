@@ -1,4 +1,7 @@
 
+import { imagemPersona } from '../personaIcones'
+import { useEffect } from 'react'
+
 interface LandingPageProps {
   onComecar: () => void
 }
@@ -29,31 +32,31 @@ const etapas = [
 
 const perfis = [
   {
-    icone: '₱',
+    id: 'economico',
     nome: 'Econômico',
     descricao: 'Analisa preços e custo-benefício.',
     classe: 'economico',
   },
   {
-    icone: '✦',
+    id: 'exigente',
     nome: 'Exigente',
     descricao: 'Valoriza qualidade e experiência.',
     classe: 'exigente',
   },
   {
-    icone: '◷',
+    id: 'ocupado',
     nome: 'Ocupado',
     descricao: 'Prioriza praticidade e conveniência.',
     classe: 'ocupado',
   },
   {
-    icone: '⌕',
+    id: 'critico',
     nome: 'Crítico',
     descricao: 'Questiona diferenciais e concorrentes.',
     classe: 'critico',
   },
   {
-    icone: '⌖',
+    id: 'fiel_regiao',
     nome: 'Fiel à região',
     descricao: 'Valoriza proximidade e confiança.',
     classe: 'fiel',
@@ -61,9 +64,41 @@ const perfis = [
 ]
 
 export default function LandingPage({ onComecar }: LandingPageProps) {
+
+  useEffect(() => {
+    const elementos = document.querySelectorAll<HTMLElement>('[data-reveal]')
+
+    const movimentoReduzido = window.matchMedia(
+      '(prefers-reduced-motion: reduce)'
+    ).matches
+
+    if (movimentoReduzido || !('IntersectionObserver' in window)) {
+      elementos.forEach((elemento) => {
+        elemento.classList.add('is-visible')
+      })
+      return
+    }
+
+    const observer = new IntersectionObserver((entradas) => {
+      entradas.forEach((entrada) => {
+        if (entrada.isIntersecting) {
+          entrada.target.classList.add('is-visible')
+          observer.unobserve(entrada.target)
+        }
+      })
+    }, {
+      threshold: 0.12,
+      rootMargin: '0px 0px -40px 0px',
+    })
+
+    elementos.forEach((elemento) => observer.observe(elemento))
+
+    return () => observer.disconnect()
+  }, [])
+
   return (
     <div className="landing-page">
-      <header className="landing-header">
+      <header className="landing-header" data-reveal="down">
         <a className="brand" href="#apresentacao" aria-label="MarketMind início">
           <span className="brand-mark"><span /></span>
           <span>
@@ -81,14 +116,14 @@ export default function LandingPage({ onComecar }: LandingPageProps) {
           className="landing-header-button"
           onClick={onComecar}
         >
-          Começar agora <span>↗</span>
+          Começar agora
         </button>
       </header>
 
       <main>
         {/* HERO */}
         <section className="landing-hero" id="apresentacao">
-          <div className="landing-hero-content">
+          <div className="landing-hero-content" data-reveal="left">
             <span className="landing-eyebrow">
               <span />
               INTELIGÊNCIA DE MERCADO
@@ -115,7 +150,7 @@ export default function LandingPage({ onComecar }: LandingPageProps) {
                 className="landing-primary-button"
                 onClick={onComecar}
               >
-                Avaliar minha ideia <span>↗</span>
+                Avaliar minha ideia <span>➤</span>
               </button>
 
               <a href="#proposta" className="landing-secondary-button">
@@ -140,16 +175,29 @@ export default function LandingPage({ onComecar }: LandingPageProps) {
           </div>
 
           {/* ÁTOMO DOS AGENTES */}
-          <div className="landing-visual" aria-hidden="true">
+          <div className="landing-visual" aria-hidden="true" data-reveal="fade">
             <div className="landing-orbit landing-orbit-wide" />
             <div className="landing-orbit landing-orbit-tall" />
 
-            <div className="landing-electron landing-outer outer-one">₱</div>
-            <div className="landing-electron landing-outer outer-two">✦</div>
-            <div className="landing-electron landing-outer outer-three">⌖</div>
+            <div className="landing-electron landing-outer outer-one">
+              <img src={imagemPersona('fiel_regiao')} alt="Fiel" />
+            </div>
 
-            <div className="landing-electron landing-inner inner-one">◷</div>
-            <div className="landing-electron landing-inner inner-two">⌕</div>
+            <div className="landing-electron landing-outer outer-two">
+              <img src={imagemPersona('critico')} alt="Crítico" />
+            </div>
+
+            <div className="landing-electron landing-outer outer-three">
+              <img src={imagemPersona('ocupado')} alt="Ocupado" />
+            </div>
+
+            <div className="landing-electron landing-inner inner-one">
+              <img src={imagemPersona('economico')} alt="Economico" />
+            </div>
+
+            <div className="landing-electron landing-inner inner-two">
+              <img src={imagemPersona('exigente')} alt="Exigente" />
+            </div>
 
             <div className="landing-nucleus">
               <img
@@ -167,11 +215,11 @@ export default function LandingPage({ onComecar }: LandingPageProps) {
 
         {/* PROBLEMA E PROPOSTA */}
         <section className="landing-proposal" id="proposta">
-          <div className="landing-section-label">
+          <div className="landing-section-label" data-reveal="down">
             <span>01</span> / O CENÁRIO
           </div>
 
-          <div className="landing-proposal-grid">
+          <div className="landing-proposal-grid" data-reveal>
             <div>
               <h2>
                 Empreender envolve
@@ -197,6 +245,7 @@ export default function LandingPage({ onComecar }: LandingPageProps) {
 
               <div className="landing-proposal-highlight">
                 <span><img src="/exclamacao.svg" alt="" /></span>
+
                 <p>
                   É nesse cenário que surge o MarketMind: uma ferramenta
                   para explorar diferentes perspectivas sobre uma ideia
@@ -210,11 +259,12 @@ export default function LandingPage({ onComecar }: LandingPageProps) {
 
         {/* COMO FUNCIONA */}
         <section className="landing-how" id="como-funciona">
-          <div className="landing-section-heading">
+          <div className="landing-section-heading" data-reveal>
             <div>
               <div className="landing-section-label">
                 <span>02</span> / A EXPERIÊNCIA
               </div>
+
               <h2>
                 Da ideia à análise.
                 <br />
@@ -230,7 +280,11 @@ export default function LandingPage({ onComecar }: LandingPageProps) {
 
           <div className="landing-steps">
             {etapas.map((etapa) => (
-              <article className="landing-step" key={etapa.numero}>
+              <article
+                className="landing-step"
+                key={etapa.numero}
+                data-reveal
+              >
                 <div className="landing-step-top">
                   <span>{etapa.numero}</span>
                   <div>
@@ -247,11 +301,11 @@ export default function LandingPage({ onComecar }: LandingPageProps) {
 
         {/* PERSONAS */}
         <section className="landing-personas" id="perspectivas">
-          <div className="landing-section-label">
+          <div className="landing-section-label" data-reveal="down">
             <span>03</span> / DIFERENTES PERSPECTIVAS
           </div>
 
-          <div className="landing-personas-heading">
+          <div className="landing-personas-heading" data-reveal>
             <h2>
               Cinco consumidores.
               <br />
@@ -270,9 +324,10 @@ export default function LandingPage({ onComecar }: LandingPageProps) {
               <article
                 className={`landing-persona-card persona-${perfil.classe}`}
                 key={perfil.nome}
+                data-reveal
               >
                 <div className="landing-persona-icon">
-                  {perfil.icone}
+                  <img src={imagemPersona(perfil.id)} alt="" />
                 </div>
 
                 <h3>{perfil.nome}</h3>
@@ -281,7 +336,7 @@ export default function LandingPage({ onComecar }: LandingPageProps) {
             ))}
           </div>
 
-          <div className="landing-debate-note">
+          <div className="landing-debate-note" data-reveal>
             <span>i</span>
             Os agentes não se limitam a avaliações isoladas: eles também
             conhecem as opiniões uns dos outros e podem manter ou mudar
@@ -291,9 +346,9 @@ export default function LandingPage({ onComecar }: LandingPageProps) {
 
         {/* TRANSPARÊNCIA */}
         <section className="landing-trust">
-          <div className="landing-trust-symbol">✳</div>
+          <div className="landing-trust-symbol" data-reveal="scale">✳</div>
 
-          <div>
+          <div data-reveal>
             <span className="landing-section-label">
               UMA FERRAMENTA DE APOIO À DECISÃO
             </span>
@@ -314,28 +369,31 @@ export default function LandingPage({ onComecar }: LandingPageProps) {
 
         {/* CHAMADA FINAL */}
         <section className="landing-final-cta">
-          <span>MARKETMIND / SUA IDEIA EM PERSPECTIVA</span>
+          <span data-reveal="down">
+            MARKETMIND / SUA IDEIA EM PERSPECTIVA
+          </span>
 
-          <h2>
+          <h2 data-reveal>
             Toda decisão começa
             <br />
             com uma pergunta.
           </h2>
 
-          <p>
+          <p data-reveal>
             Apresente sua ideia e descubra diferentes formas de enxergá-la.
           </p>
 
           <button
             className="landing-primary-button"
             onClick={onComecar}
+            data-reveal="scale"
           >
-            Começar minha avaliação <span>↗</span>
+            Começar minha avaliação
           </button>
         </section>
       </main>
 
-      <footer className="landing-footer">
+      <footer className="landing-footer" data-reveal>
         <a className="brand" href="#apresentacao">
           <span className="brand-mark"><span /></span>
           <span>

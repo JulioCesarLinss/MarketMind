@@ -70,6 +70,8 @@ export interface LojasRegiao {
   quantidade: number | null
   raio_metros: number
   categoria: string
+  abrangencia?: 'bairro' | 'cidade' // cidade = nenhuma perto do bairro, contou na cidade inteira
+  area?: string
   nivel_concorrencia: string // 'nenhum concorrente mapeado' | 'baixa' | 'media' | 'alta' | 'indeterminado'
   nomes: string[]
   fonte: string
@@ -143,8 +145,50 @@ export interface AnaliseDebate {
   experimentos: string[]
 }
 
+// ---- Viabilidade financeira (calculada pelo backend, sem IA; só com custos informados) ----
+
+export interface CenarioVendas {
+  clientes_dia: number
+  vendas_mes: number
+  faturamento_mes: number
+  lucro_dia: number
+  lucro_mes: number // negativo = prejuízo
+  meses_para_pagar: number | null
+}
+
+export interface CenarioPreco {
+  rotulo: string
+  preco: number
+  lucro_por_venda: number
+  margem_pct: number
+  aceitam: number | null
+}
+
+export interface Financeiro {
+  preco: number
+  custo_unitario: number
+  taxa_plataforma_pct: number
+  custo_fixo_mensal: number
+  receita_liquida_venda: number
+  lucro_por_venda: number
+  margem_pct: number
+  lucro_esperado_pct: number | null
+  preco_para_lucro_esperado: number | null
+  avaliacao_preco: 'prejuizo' | 'abaixo_do_esperado' | 'dentro_do_esperado' | 'sem_meta'
+  resumo_preco: string
+  dias_por_mes: number
+  investimento_inicial: number | null
+  cenarios: CenarioVendas[]
+  cenarios_preco: CenarioPreco[]
+  alertas: string[]
+  nao_considerado: string[]
+  aviso_custos: string // não considera impostos nem pagamento de funcionários
+  aviso: string
+}
+
 export interface Relatorio {
   indicadores: Indicadores
+  financeiro?: Financeiro | null
   analise: AnaliseDebate | null
   origem_analise: string | null
   erro_analise: string | null
@@ -178,6 +222,8 @@ export interface NegocioPayload {
     custo_fixo_mensal: number
     custo_variavel_unitario: number
     taxa_plataforma_pct: number
+    lucro_esperado_pct: number | null
+    investimento_inicial: number | null
   } | null
   entrega: EntregaPayload | null
   concorrentes: ConcorrentePayload[]

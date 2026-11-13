@@ -48,6 +48,8 @@ NEGOCIOS: dict[str, dict] = {
         "preco": 26.0,
         "publico": "Frequentadores de academia e estudantes",
         "divulgacao": "Instagram, iFood e parceria com academias",
+        "custos": {"custo_fixo_mensal": 3500, "custo_variavel_unitario": 11, "taxa_plataforma_pct": 23,
+                   "lucro_esperado_pct": 30, "investimento_inicial": 20000},
         "concorrentes": [
             {"nome": "Restaurante self-service", "preco": 22.0, "observacao": "comida na hora, sem controle de calorias"},
             {"nome": "Marmita caseira de vizinha", "preco": 15.0, "observacao": "barata, cardápio fixo"},

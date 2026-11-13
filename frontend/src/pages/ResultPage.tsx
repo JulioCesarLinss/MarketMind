@@ -2,6 +2,7 @@ import AgentCard from '../components/AgentCard'
 import MessageCard from '../components/MessageCard'
 import MercadoRegiao from '../components/MercadoRegiao'
 import RelatorioAnalista from '../components/RelatorioAnalista'
+import ViabilidadeFinanceira from '../components/ViabilidadeFinanceira'
 import { mudouDePosicao, type PersonaPublica, type ResultadoSimulacao } from '../types'
 
 interface ResultPageProps {
@@ -53,7 +54,9 @@ export default function ResultPage({ personas, resultado, onNovaAvaliacao }: Res
   const pesquisa = resultado.pesquisa ?? null
   const num = (n: number) => String(n).padStart(2, '0')
   const secaoMercado = 6
-  const secaoRelatorio = secaoMercado + (pesquisa ? 1 : 0)
+  const financeiro = relatorio?.financeiro ?? null
+  const secaoFinanceiro = secaoMercado + (pesquisa ? 1 : 0)
+  const secaoRelatorio = secaoFinanceiro + (financeiro ? 1 : 0)
   const secaoPerfis = secaoRelatorio + (relatorio ? 1 : 0)
   const secaoHistorico = secaoPerfis + 1
 
@@ -81,7 +84,7 @@ export default function ResultPage({ personas, resultado, onNovaAvaliacao }: Res
             <h1>Sua ideia foi<br /><span>vista por outros ângulos.</span></h1>
             <p>Veja o que chamou atenção, quais dúvidas apareceram e onde vale aprofundar a validação.</p>
           </div>
-          <div className="result-stamp"><span>MM</span><strong>DEBATE<br />FINALIZADO</strong><i>✳</i></div>
+          <div className="result-stamp"><span><img src="/favicon2.svg" alt="Favicon"/></span><strong>DEBATE<br />FINALIZADO</strong><i>✳</i></div>
         </section>
 
         <section className="summary-section">
@@ -179,6 +182,8 @@ export default function ResultPage({ personas, resultado, onNovaAvaliacao }: Res
 
         {pesquisa && <MercadoRegiao pesquisa={pesquisa} indiceSecao={num(secaoMercado)} />}
 
+        {financeiro && <ViabilidadeFinanceira financeiro={financeiro} indiceSecao={num(secaoFinanceiro)} />}
+
         {relatorio && <RelatorioAnalista relatorio={relatorio} indiceSecao={num(secaoRelatorio)} />}
 
         <section className="final-agents-section">
@@ -216,7 +221,7 @@ export default function ResultPage({ personas, resultado, onNovaAvaliacao }: Res
           <span>i</span>
           <p><strong>Importante:</strong> {relatorio?.aviso || 'os resultados representam percepções de consumidores sintéticos, não uma amostra estatística nem uma previsão de vendas. Use os pontos levantados como hipóteses para testar com clientes reais.'}</p>
         </div>
-        <button className="evaluate-button new-evaluation-button" onClick={onNovaAvaliacao}>Avaliar outra ideia <span>↗</span></button>
+        <button className="evaluate-button new-evaluation-button" onClick={onNovaAvaliacao}>Avaliar outra ideia</button>
       </main>
     </div>
   )
