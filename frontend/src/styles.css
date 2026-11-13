@@ -1798,3 +1798,66 @@ a { color: inherit; text-decoration: none; }
     box-shadow .25s ease,
     background .25s ease;
 }
+
+/* ---- Especialistas: pareceres individuais ---- */
+.agents-group-title { margin: 18px 0 10px; color: #6d7282; font: 500 9px 'DM Mono', monospace; letter-spacing: .8px; text-transform: uppercase; }
+.agents-group-title:first-of-type { margin-top: 0; }
+.especialista-avatar { background: #eef0ff; color: #4f46a5; }
+.especialista-avatar > span { font: 700 16px 'Manrope', sans-serif; line-height: 1; }
+.persona-group-title { display: block; margin: 10px 0 7px; color: #505566; font-size: 10px; font-weight: 700; }
+.persona-group-title small { color: #a0a4af; font-weight: 400; }
+.persona-option-icon.especialista-avatar { opacity: .45; }
+.persona-option.is-selected .persona-option-icon.especialista-avatar { opacity: 1; }
+.veredito-pill { display: inline-block; padding: 3px 9px; border-radius: 20px; font: 500 8px 'DM Mono', monospace; letter-spacing: .4px; text-transform: uppercase; white-space: nowrap; }
+.veredito-favoravel { background: #e8f5ef; color: #2f7d61; }
+.veredito-favoravel_com_ajustes { background: #fff3df; color: #a06a1f; }
+.veredito-desfavoravel { background: #fbe9e9; color: #b05a5a; }
+.especialistas-section { margin-top: 58px; }
+.pareceres-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+.parecer-card { padding: 18px 20px; border: 1px solid #e8e9f0; border-radius: 12px; background: #fff; animation: fade-up .35s ease both; }
+.message-list .parecer-card { border-color: #e4e0fb; background: linear-gradient(150deg, #fff, #faf9ff); }
+.parecer-topo { display: flex; align-items: center; gap: 11px; }
+.parecer-icone { width: 38px; height: 38px; flex: 0 0 38px; display: grid; place-items: center; border-radius: 12px; background: #eef0ff; color: #4f46a5; font: 700 16px 'Manrope', sans-serif; }
+.parecer-identidade { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.parecer-identidade strong { color: #3d4152; font-size: 13px; }
+.parecer-identidade span { color: #a0a4b0; font-size: 10px; }
+.parecer-nota strong { color: #45495b; font: 750 24px 'Manrope', sans-serif; letter-spacing: -.6px; }
+.parecer-nota small { color: #a9acb7; font-size: 11px; }
+.parecer-selos { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 12px; }
+.parecer-preco { color: #7d8292; font-size: 10px; }
+.parecer-preco strong { color: #4f5366; }
+.parecer-resumo { margin: 12px 0 0; color: #4f5366; font-size: 12px; line-height: 1.65; }
+.parecer-listas { display: grid; gap: 10px; margin-top: 12px; }
+.parecer-listas ul { margin: 4px 0 0; padding-left: 16px; color: #555a6a; font-size: 11px; line-height: 1.55; }
+.parecer-rotulo { font: 500 8px 'DM Mono', monospace; letter-spacing: .6px; text-transform: uppercase; }
+.parecer-rotulo.positivo { color: #42916f; }
+.parecer-rotulo.risco { color: #bf7070; }
+.parecer-rotulo.acao { color: #6859d9; }
+.descartadas-panel { margin-top: 14px; padding: 14px 18px; border: 1px dashed #e1e3ea; border-radius: 11px; background: #fcfcfe; }
+.descartadas-panel summary { display: flex; align-items: center; gap: 10px; cursor: pointer; list-style: none; }
+.descartadas-panel summary::-webkit-details-marker { display: none; }
+.descartadas-panel summary strong { display: block; color: #505566; font-size: 12px; }
+.descartadas-panel summary small { display: block; margin-top: 2px; color: #a0a4b0; font-size: 10px; }
+.descartadas-icon { background: #f0f1f5; color: #7d8292; }
+.descartadas-panel ul { margin: 12px 0 0; padding-left: 18px; color: #7d8292; font-size: 11px; line-height: 1.6; }
+@media (max-width: 900px) {
+  .pareceres-grid { grid-template-columns: 1fr; }
+}
+
+/* Landing: ícones das etapas com tamanho fixo (os SVGs só têm viewBox; sem tamanho,
+   alguns navegadores encolhem a imagem para zero dentro da caixinha) */
+.landing-step-top > div { overflow: hidden; }
+.landing-step-icon { display: block; width: 35px; height: 35px; }
+
+/* Landing: grupos de especialistas e consumidores */
+.landing-group-title { margin: 36px 0 0; color: #6d7282; font: 500 10px 'DM Mono', monospace; letter-spacing: .8px; text-transform: uppercase; }
+.landing-group-title + .landing-persona-grid { margin-top: 12px; }
+.landing-especialistas-grid { grid-template-columns: repeat(6, 1fr); }
+.landing-especialista-icon { background: #eef0ff; color: #4f46a5; }
+.landing-especialista-icon > span { font: 700 16px 'Manrope', sans-serif; line-height: 1; }
+@media (max-width: 900px) {
+  .landing-especialistas-grid { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 560px) {
+  .landing-especialistas-grid { grid-template-columns: repeat(2, 1fr); }
+}

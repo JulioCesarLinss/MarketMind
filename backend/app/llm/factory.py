@@ -92,6 +92,30 @@ def criar_provider(
     return cadeia[0] if len(cadeia) == 1 else FallbackProvider(cadeia)
 
 
+def criar_provider_especialistas() -> LLMProvider:
+    """Provedor dos especialistas: LLM_ESPECIALISTAS_PROVIDER (padrão Gemini) → reserva no provedor das personas (Groq).
+
+    Sem mock no fim: um parecer gravado de outro negócio seria enganoso (se tudo falhar, aquele parecer fica de fora).
+    Se o provedor dos especialistas não estiver configurado (ex.: sem GEMINI_API_KEY), usa a cadeia das personas."""
+    from app.llm.fallback import FallbackProvider
+
+    nome = settings.llm_especialistas_provider
+    modelo = settings.llm_model_especialistas or (
+        settings.llm_fallback_model_personas if settings.llm_fallback_provider == nome else ""
+    )
+    if nome == "mock" or settings.llm_provider == "mock":
+        return criar_provider("mock")
+    try:
+        principal = criar_provider_unico(nome, modelo, "LLM_MODEL_ESPECIALISTAS")
+    except ConfiguracaoLLMError:
+        return criar_provider(papel="personas", mock_no_fim=False)
+    try:
+        reserva = criar_provider_unico(settings.llm_provider, settings.llm_model_personas)
+    except ConfiguracaoLLMError:
+        return principal
+    return principal if reserva.nome == principal.nome else FallbackProvider([principal, reserva])
+
+
 def _modelo_principal(papel: Papel) -> str:
     return settings.llm_model_analista if papel == "analista" else settings.llm_model_personas
 

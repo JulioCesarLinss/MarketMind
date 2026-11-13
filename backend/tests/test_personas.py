@@ -113,3 +113,26 @@ def test_personas_nao_cobram_prova_do_que_foi_descrito():
     critico, exigente = PERSONAS["critico"], PERSONAS["exigente"]
     assert "comprovado" not in critico.prioridades and "irônico" not in critico.jeito_de_falar
     assert "avaliações" not in exigente.convence_se_com
+
+
+
+def test_especialistas_tem_regras_de_realismo():
+    from app.agents.especialistas import ESPECIALISTAS
+    assert len(ESPECIALISTAS) == 6
+    for e in ESPECIALISTAS.values():
+        prompt = e.prompt_sistema()
+        assert "FATOS CALCULADOS" in prompt and "Nunca os contradiga" in prompt
+        assert "não critique a falta de" in prompt and "Avalie SÓ a sua área" in prompt
+    assert not set(ESPECIALISTAS) & set(PERSONAS)  # ids diferentes nos dois grupos
+
+
+def test_fatos_calculados_entram_no_contexto():
+    from app.agents.contexto import fatos_calculados, formatar_negocio
+    from app.models.pesquisa import PesquisaMercado
+    negocio = {"tipo": "Marmitaria", "preco": 20, "concorrentes": [{"nome": "A", "preco": 50}],
+               "custos": {"custo_variavel_unitario": 8, "taxa_plataforma_pct": 10}}
+    fatos = fatos_calculados(negocio, PesquisaMercado(media_geral=50, total_precos=9))
+    assert "60% abaixo da média dos concorrentes" in fatos[0] and "60% abaixo da média de preços encontrada" in fatos[1]
+    assert "R$ 10,00 de margem" in fatos[2]
+    assert "Fatos calculados pelo sistema" in formatar_negocio(negocio)
+    assert "praticamente igual à" in fatos_calculados({"preco": 51, "concorrentes": [{"nome": "A", "preco": 50}]})[0]

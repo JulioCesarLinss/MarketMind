@@ -42,10 +42,36 @@ class MensagemDebate(BaseModel):
     duracao_segundos: float
 
 
+class ParecerEspecialista(BaseModel):
+    """Parecer individual de um especialista (sem conversar com os outros)."""
+
+    resumo: str = Field(description="Avaliação da sua área em 3 a 5 frases, com argumentos concretos dos dados do negócio")
+    nota: int = Field(ge=0, le=10, description="Viabilidade na sua área, de 0 a 10 (veja a régua)")
+    veredito: Literal["favoravel", "favoravel_com_ajustes", "desfavoravel"]
+    pontos_fortes: list[str] = Field(default_factory=list, description="2 a 3 pontos fortes, na sua área")
+    riscos: list[str] = Field(default_factory=list, description="2 a 3 riscos ou pontos fracos reais, na sua área")
+    recomendacoes: list[str] = Field(default_factory=list, description="2 a 3 ações concretas e viáveis para o dono")
+    avaliacao_preco: Literal["baixo", "adequado", "alto"] = Field(
+        description="O preço para este produto e esta região, coerente com os fatos calculados"
+    )
+    preco_sugerido: float | None = Field(default=None, description="Preço que você recomendaria em reais (número ou null)")
+
+
+class MensagemParecer(BaseModel):
+    """Um parecer no feed (evento SSE `parecer`)."""
+
+    especialista_id: str
+    especialista_nome: str
+    area: str
+    parecer: ParecerEspecialista
+    origem: str = Field(description="Quem gerou, ex.: gemini/gemini-3.5-flash-lite")
+    duracao_segundos: float
+
+
 class AnaliseDebate(BaseModel):
     """Parte em TEXTO do relatório, escrita pelo agente analista (IA)."""
 
-    resumo: str = Field(description="Visão geral em 3 a 5 frases: como os consumidores receberam a oferta e por quê")
+    resumo: str = Field(description="Visão geral em 3 a 5 frases: como consumidores e especialistas avaliaram a oferta e por quê")
     elogios: list[str] = Field(description="2 a 4 pontos que agradaram, citando entre parênteses quem disse")
     objecoes: list[str] = Field(
         description="2 a 4 principais objeções, da mais citada para a menos, citando entre parênteses quem levantou"
@@ -60,6 +86,12 @@ class AnaliseDebate(BaseModel):
     experimentos: list[str] = Field(
         description=("2 a 3 testes baratos e rápidos com clientes reais, adequados ao ramo, dizendo o que fazer e o que medir. "
                      "No máximo um envolvendo algo gratuito (amostra, degustação, brinde)")
+    )
+    opinioes_descartadas: list[str] = Field(
+        default_factory=list,
+        description=("Opiniões que você NÃO usou por serem extrapoladas, no formato 'Quem: o que disse — por que foi descartada' "
+                     "(ex.: contradiz os fatos calculados, exige prova que um negócio novo não tem, afirmação técnica sem base). "
+                     "Lista vazia se nada foi descartado"),
     )
 
 
@@ -78,6 +110,9 @@ class Indicadores(BaseModel):
     """Parte NUMÉRICA do relatório, calculada pelo código (não pela IA)."""
 
     preco_ofertado: float
+    nota_media_especialistas: float | None = Field(default=None, description="Média das notas dos especialistas (0 a 10)")
+    vereditos_especialistas: dict[str, int] = Field(
+        default_factory=dict, description='Quantos especialistas deram "favoravel", "favoravel_com_ajustes" e "desfavoravel"')
     interesse_medio_r1: float
     interesse_medio_r2: float
     decisoes_r2: dict[str, int] = Field(description='Quantas personas disseram "sim", "talvez" e "nao" na rodada 2')
@@ -164,14 +199,18 @@ class ResultadoSimulacao(BaseModel):
     tokens_usados: int
     duracao_segundos: float
     relatorio: Relatorio | None = None
+    pareceres: list[MensagemParecer] = Field(default_factory=list, description="Pareceres dos especialistas")
     pesquisa: PesquisaMercado | None = Field(default=None, description="Referência de mercado do agente pesquisador")
 
     def da_rodada(self, rodada: int) -> list[MensagemDebate]:
         return [m for m in self.mensagens if m.rodada == rodada]
 
     def comparar_rodadas(self) -> list[tuple[MensagemDebate, MensagemDebate, bool]]:
-        """Para cada persona: (fala da rodada 1, fala da rodada 2, mudou de posição de fato?)."""
+        """Para cada persona: (fala da rodada 1, fala da rodada 2, mudou de posição de fato?).
+        Sem rodada 2 (o padrão agora: ninguém debate), a opinião final é a da rodada 1."""
         r1 = {m.persona_id: m for m in self.da_rodada(1)}
+        if not self.da_rodada(2):
+            return [(m, m, False) for m in r1.values()]
         return [
             (r1[m2.persona_id], m2, mudou_de_posicao(r1[m2.persona_id].opiniao, m2.opiniao))
             for m2 in self.da_rodada(2)

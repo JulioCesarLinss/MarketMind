@@ -1,5 +1,5 @@
 
-import { imagemPersona } from '../personaIcones'
+import { imagemPersona, simboloEspecialista } from '../personaIcones'
 import { useEffect } from 'react'
 
 interface LandingPageProps {
@@ -12,22 +12,31 @@ const etapas = [
     titulo: 'Apresente sua ideia',
     descricao:
       'Informe o que pretende vender, o preço, o público que deseja alcançar e como planeja divulgar seu negócio.',
-    icone: 'ideia.svg',
+    icone: '/ideia.svg',
   },
   {
     numero: '02',
     titulo: 'Acompanhe as perspectivas',
     descricao:
-      'Diferentes perfis de consumidores avaliam sua oferta individualmente e depois debatem suas opiniões.',
-    icone: 'perspectiva.svg',
+      'Especialistas e diferentes perfis de consumidores avaliam sua oferta, cada um sozinho, sem influência dos outros.',
+    icone: '/perspectiva.svg',
   },
   {
     numero: '03',
     titulo: 'Explore os resultados',
     descricao:
-      'Receba um panorama com interesses, intenções de compra, objeções e sugestões do que merece ser validado.',
-    icone: '/grafico.svg'
+      'Um analista junta as avaliações, descarta opiniões exageradas e entrega o relatório com o que merece ser validado.',
+    icone: '/grafico.svg',
   },
+]
+
+const especialistas = [
+  { id: 'precificacao', nome: 'Precificação e Finanças', descricao: 'Avalia preço, margem e saúde financeira.' },
+  { id: 'marketing', nome: 'Marketing e Divulgação', descricao: 'Avalia público, canais e mensagem.' },
+  { id: 'operacoes', nome: 'Operações e Entrega', descricao: 'Avalia a rotina, a produção e a entrega.' },
+  { id: 'mercado', nome: 'Mercado e Concorrência', descricao: 'Compara com os concorrentes da região.' },
+  { id: 'experiencia', nome: 'Experiência do Cliente', descricao: 'Avalia o que atrai e o que faz voltar.' },
+  { id: 'consultor', nome: 'Consultor de Negócios', descricao: 'Avalia a viabilidade e os riscos de abrir.' },
 ]
 
 const perfis = [
@@ -109,7 +118,7 @@ export default function LandingPage({ onComecar }: LandingPageProps) {
         <nav className="landing-nav">
           <a href="#proposta">Nossa proposta</a>
           <a href="#como-funciona">Como funciona</a>
-          <a href="#perspectivas">Os consumidores</a>
+          <a href="#perspectivas">Os agentes</a>
         </nav>
 
         <button
@@ -140,8 +149,8 @@ export default function LandingPage({ onComecar }: LandingPageProps) {
             <p className="landing-hero-description">
               Tomar decisões sobre um negócio nem sempre é simples.
               O MarketMind utiliza múltiplos agentes de inteligência
-              artificial para simular diferentes perfis de consumidores,
-              avaliar sua oferta e revelar pontos que merecem atenção
+              artificial para simular especialistas e diferentes perfis de
+              consumidores, avaliar sua oferta e revelar pontos que merecem atenção
               antes de investir.
             </p>
 
@@ -160,16 +169,16 @@ export default function LandingPage({ onComecar }: LandingPageProps) {
 
             <div className="landing-metrics">
               <div>
+                <strong>06</strong>
+                <span>Especialistas</span>
+              </div>
+              <div>
                 <strong>05</strong>
                 <span>Perfis de consumidores</span>
               </div>
               <div>
-                <strong>02</strong>
-                <span>Rodadas de debate</span>
-              </div>
-              <div>
                 <strong>01</strong>
-                <span>Relatório consolidado</span>
+                <span>Relatório filtrado</span>
               </div>
             </div>
           </div>
@@ -208,7 +217,7 @@ export default function LandingPage({ onComecar }: LandingPageProps) {
             </div>
 
             <div className="landing-visual-caption">
-              CINCO PERSPECTIVAS. UMA IDEIA.
+              ONZE PERSPECTIVAS. UMA IDEIA.
             </div>
           </div>
         </section>
@@ -274,7 +283,7 @@ export default function LandingPage({ onComecar }: LandingPageProps) {
 
             <p>
               O MarketMind transforma as informações do seu negócio
-              em uma simulação estruturada de avaliação e debate.
+              em avaliações independentes e um relatório que separa o que é útil do que é exagero.
             </p>
           </div>
 
@@ -288,7 +297,7 @@ export default function LandingPage({ onComecar }: LandingPageProps) {
                 <div className="landing-step-top">
                   <span>{etapa.numero}</span>
                   <div>
-                    <img src={etapa.icone} alt="" />
+                    <img className="landing-step-icon" src={etapa.icone} alt="" width={35} height={35} />
                   </div>
                 </div>
 
@@ -307,18 +316,32 @@ export default function LandingPage({ onComecar }: LandingPageProps) {
 
           <div className="landing-personas-heading" data-reveal>
             <h2>
-              Cinco consumidores.
+              Seis especialistas. Cinco consumidores.
               <br />
-              <span>Cinco formas de pensar.</span>
+              <span>Onze formas de pensar.</span>
             </h2>
 
             <p>
-              Cada agente possui características, prioridades e
-              comportamentos próprios. Assim, a mesma oferta pode
-              despertar reações diferentes.
+              Os especialistas avaliam o negócio cada um na sua área, como
+              consultores. Os consumidores mostram como diferentes perfis de
+              cliente reagiriam à oferta. Você escolhe quem participa.
             </p>
           </div>
 
+          <h3 className="landing-group-title" data-reveal>Especialistas</h3>
+          <div className="landing-persona-grid landing-especialistas-grid">
+            {especialistas.map((especialista) => (
+              <article className="landing-persona-card" key={especialista.id} data-reveal>
+                <div className="landing-persona-icon landing-especialista-icon">
+                  <span>{simboloEspecialista(especialista.id)}</span>
+                </div>
+                <h3>{especialista.nome}</h3>
+                <p>{especialista.descricao}</p>
+              </article>
+            ))}
+          </div>
+
+          <h3 className="landing-group-title" data-reveal>Consumidores</h3>
           <div className="landing-persona-grid">
             {perfis.map((perfil) => (
               <article
@@ -338,9 +361,9 @@ export default function LandingPage({ onComecar }: LandingPageProps) {
 
           <div className="landing-debate-note" data-reveal>
             <span>i</span>
-            Os agentes não se limitam a avaliações isoladas: eles também
-            conhecem as opiniões uns dos outros e podem manter ou mudar
-            suas posições durante o debate.
+            Cada agente avalia sozinho, sem ver a opinião dos outros. Depois, o
+            analista junta tudo, descarta opiniões exageradas ou que contradizem
+            os dados e escreve o relatório final.
           </div>
         </section>
 
@@ -361,7 +384,7 @@ export default function LandingPage({ onComecar }: LandingPageProps) {
 
             <p>
               As opiniões são geradas
-              por consumidores sintéticos e ajudam a serem interpretadas como
+              por especialistas e consumidores sintéticos e devem ser interpretadas como
               hipóteses para orientar decisões e experimentos.
             </p>
           </div>

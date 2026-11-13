@@ -10,3 +10,17 @@ const IMAGENS_PERSONA: Record<string, string> = {
 export function imagemPersona(id: string): string {
   return IMAGENS_PERSONA[id] || '/favicon.svg'
 }
+
+// Especialistas: símbolo em texto (não há desenho próprio para eles)
+const SIMBOLOS_ESPECIALISTA: Record<string, string> = {
+  precificacao: 'R$',
+  marketing: '◎',
+  operacoes: '⚙',
+  mercado: '▦',
+  experiencia: '♥',
+  consultor: '★',
+}
+
+export function simboloEspecialista(id: string): string {
+  return SIMBOLOS_ESPECIALISTA[id] || '✳'
+}

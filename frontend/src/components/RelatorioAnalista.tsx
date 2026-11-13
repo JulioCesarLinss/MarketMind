@@ -23,7 +23,7 @@ export default function RelatorioAnalista({ relatorio, indiceSecao }: RelatorioA
     <section className="report-section">
       <div className="section-heading compact-heading">
         <div><span className="section-index">{indiceSecao} <span>/ RELATÓRIO</span></span><h2>O que o analista recomenda</h2></div>
-        {relatorio.origem_analise && <span className="section-side-caption">Escrito por IA a partir do debate</span>}
+        {relatorio.origem_analise && <span className="section-side-caption">Escrito por IA a partir das avaliações, sem as opiniões exageradas</span>}
       </div>
 
       {!analise ? (
@@ -83,6 +83,17 @@ export default function RelatorioAnalista({ relatorio, indiceSecao }: RelatorioA
               ))}
             </div>
           </article>
+
+          {analise.opinioes_descartadas && analise.opinioes_descartadas.length > 0 && (
+            <details className="descartadas-panel">
+              <summary>
+                <span className="insight-icon descartadas-icon">⌫</span>
+                <span><strong>O que o analista descartou ({analise.opinioes_descartadas.length})</strong>
+                  <small>Opiniões exageradas ou que contradiziam os dados; não entraram no relatório</small></span>
+              </summary>
+              <ul>{analise.opinioes_descartadas.map((item, i) => <li key={i}>{item}</li>)}</ul>
+            </details>
+          )}
         </>
       )}
     </section>

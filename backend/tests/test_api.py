@@ -45,22 +45,24 @@ def test_simulacao_demo_completa(client):
 
     eventos = ler_eventos(client, id_)
     mensagens = [json.loads(d) for t, d in eventos if t == "mensagem"]
-    assert len(mensagens) == 2 * len(PERSONAS)
+    assert len(mensagens) == len(PERSONAS)  # 1 opinião por consumidor (sem debate)
+    pareceres = [json.loads(d) for t, d in eventos if t == "parecer"]
+    assert len(pareceres) == 6 and criada.json()["especialistas"][0] == "precificacao"
     assert criada.json()["personas"] == list(PERSONAS)
     assert eventos[-1][0] == "fim"
     assert eventos[-2] == ("etapa", '{"etapa": "analise"}')  # aviso antes do relatório
     # Pesquisa de mercado vem antes da primeira fala
     assert eventos[0] == ("etapa", '{"etapa": "pesquisa"}')
     assert eventos[1][0] == "pesquisa" and json.loads(eventos[1][1])["total_precos"] > 0
-    assert eventos[2][0] == "mensagem"
+    assert eventos[2][0] in ("mensagem", "parecer")
     final = json.loads(eventos[-1][1])
-    assert final["rodadas"] == 2
+    assert final["rodadas"] == 1 and len(final["pareceres"]) == 6
     assert final["relatorio"]["analise"]["recomendacoes"]
     assert final["relatorio"]["indicadores"]["preco_ofertado"] == NEGOCIOS["barbearia"]["preco"]
 
     estado = client.get(f"/simulacoes/{id_}").json()
     assert estado["status"] == "concluida"
-    assert len(estado["mensagens"]) == 2 * len(PERSONAS)
+    assert len(estado["mensagens"]) == len(PERSONAS) and len(estado["pareceres"]) == 6
 
     # Quem conecta depois do fim recebe tudo de novo (ex.: recarregou a página)
     assert len(ler_eventos(client, id_)) == len(eventos)
@@ -91,7 +93,7 @@ def test_escolhe_quais_personas(client):
     criada = client.post(rota, json=NEGOCIOS["barbearia"]).json()
     assert criada["personas"] == ["economico", "critico", "fiel_regiao"]  # na ordem padrão
     mensagens = [json.loads(d) for t, d in ler_eventos(client, criada["id"]) if t == "mensagem"]
-    assert len(mensagens) == 6 and {m["persona_id"] for m in mensagens} == {"economico", "critico", "fiel_regiao"}
+    assert len(mensagens) == 3 and {m["persona_id"] for m in mensagens} == {"economico", "critico", "fiel_regiao"}
     # só 1 persona ou id inexistente → 422
     assert client.post("/simulacoes?demo=true&personas=critico", json=NEGOCIOS["barbearia"]).status_code == 422
     assert client.post("/simulacoes?demo=true&personas=critico&personas=xyz", json=NEGOCIOS["barbearia"]).status_code == 422
@@ -121,3 +123,21 @@ def test_relatorio_financeiro_no_resultado(client):
     # só lucro esperado e investimento vazios também valem (campos opcionais)
     minimo = {"custo_variavel_unitario": 30}
     assert client.post("/simulacoes?demo=true", json={**NEGOCIOS["barbearia"], "custos": minimo}).status_code == 201
+
+
+
+def test_escolhe_agentes_dos_dois_grupos(client):
+    criada = client.post("/simulacoes?demo=true&agentes=critico&agentes=marketing&agentes=precificacao",
+                         json=NEGOCIOS["barbearia"]).json()
+    assert criada["personas"] == ["critico"] and criada["especialistas"] == ["precificacao", "marketing"]
+    eventos = ler_eventos(client, criada["id"])
+    assert sum(t == "mensagem" for t, _ in eventos) == 1 and sum(t == "parecer" for t, _ in eventos) == 2
+    # só especialistas também vale; menos de 2 agentes ou id inexistente, não
+    assert client.post("/simulacoes?demo=true&agentes=marketing&agentes=mercado", json=NEGOCIOS["barbearia"]).status_code == 201
+    assert client.post("/simulacoes?demo=true&agentes=marketing", json=NEGOCIOS["barbearia"]).status_code == 422
+    assert client.post("/simulacoes?demo=true&agentes=marketing&agentes=xyz", json=NEGOCIOS["barbearia"]).status_code == 422
+
+
+def test_lista_especialistas(client):
+    ids = [e["id"] for e in client.get("/especialistas").json()]
+    assert ids == ["precificacao", "marketing", "operacoes", "mercado", "experiencia", "consultor"]

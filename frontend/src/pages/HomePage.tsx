@@ -1,10 +1,11 @@
 
 import { useState, type FormEvent } from 'react'
-import { imagemPersona } from '../personaIcones'
+import { imagemPersona, simboloEspecialista } from '../personaIcones'
 import {
   MIN_AGENTES,
   MODELOS_ENTREGA,
   type ModeloEntrega,
+  type EspecialistaPublico,
   type NegocioPayload,
   type PersonaPublica,
 } from '../types'
@@ -17,6 +18,7 @@ interface ConcorrenteRascunho {
 
 interface HomePageProps {
   personas: PersonaPublica[]
+  especialistas: EspecialistaPublico[]
   carregando: boolean
   erro: string
   aoAvaliar: (negocio: NegocioPayload, demo: boolean, personas: string[]) => void
@@ -24,7 +26,7 @@ interface HomePageProps {
 
 const concorrenteVazio = (): ConcorrenteRascunho => ({ nome: '', preco: '', observacao: '' })
 
-export default function HomePage({ personas, carregando, erro, aoAvaliar }: HomePageProps) {
+export default function HomePage({ personas, especialistas, carregando, erro, aoAvaliar }: HomePageProps) {
   const [nomeProduto, setNomeProduto] = useState('')
   const [descricao, setDescricao] = useState('')
   const [tipo, setTipo] = useState('')
@@ -48,7 +50,9 @@ export default function HomePage({ personas, carregando, erro, aoAvaliar }: Home
   const [prazoEntrega, setPrazoEntrega] = useState('')
   const [areaEntrega, setAreaEntrega] = useState('')
   const [garantiasEntrega, setGarantiasEntrega] = useState('')
-  const escolhidas = personas.filter((p) => !desmarcadas.includes(p.id)).map((p) => p.id)
+  // Consumidores e especialistas escolhidos (mínimo 2 no total; começam todos marcados)
+  const todosIds = [...personas.map((p) => p.id), ...especialistas.map((e) => e.id)]
+  const escolhidas = todosIds.filter((id) => !desmarcadas.includes(id))
 
   function alternarPersona(id: string) {
     if (desmarcadas.includes(id)) {
@@ -123,7 +127,7 @@ export default function HomePage({ personas, carregando, erro, aoAvaliar }: Home
         <section className="hero-section">
           <div className="hero-copy">
             <span className="eyebrow"><span className="eyebrow-line" /> SIMULAÇÃO ANTES DE INVESTER</span>
-            <h1>Uma ideia.<br /><span>Cinco perspectivas.</span></h1>
+            <h1>Uma ideia.<br /><span>Onze perspectivas.</span></h1>
             <p>
               Descubra como diferentes perfis de consumidores podem reagir ao seu produto,
               debater a oferta e apontar o que merece ser validado.
@@ -136,7 +140,7 @@ export default function HomePage({ personas, carregando, erro, aoAvaliar }: Home
                 <span><img src={imagemPersona('exigente')} alt="Exigente" /></span>
                 <span><img src={imagemPersona('economico')} alt="Economico" /></span>
               </div>
-              <span><strong>5 agentes independentes</strong><br />2 rodadas de avaliação e debate</span>
+              <span><strong>6 especialistas e 5 consumidores</strong><br />cada um avalia sozinho; o analista filtra e conclui</span>
             </div>
           </div>
           <div className="hero-visual" aria-hidden="true">
@@ -285,9 +289,35 @@ export default function HomePage({ personas, carregando, erro, aoAvaliar }: Home
 
             <fieldset className="persona-picker">
               <legend>
-                <strong>Escolha os consumidores</strong>
-                <small>{escolhidas.length} de {personas.length} selecionados · mínimo {MIN_AGENTES}</small>
+                <strong>Escolha quem vai avaliar</strong>
+                <small>{escolhidas.length} de {todosIds.length} selecionados · mínimo {MIN_AGENTES}</small>
               </legend>
+              {especialistas.length > 0 && (
+                <>
+                  <span className="persona-group-title">Especialistas <small>· um parecer técnico cada, na sua área</small></span>
+                  <div className="persona-options">
+                    {especialistas.map((especialista) => {
+                      const marcada = escolhidas.includes(especialista.id)
+                      const travada = marcada && escolhidas.length <= MIN_AGENTES
+                      return (
+                        <button
+                          key={especialista.id}
+                          type="button"
+                          className={`persona-option${marcada ? ' is-selected' : ''}`}
+                          aria-pressed={marcada}
+                          title={travada ? `Mantenha pelo menos ${MIN_AGENTES} agentes` : especialista.foco}
+                          onClick={() => alternarPersona(especialista.id)}
+                        >
+                          <span className="persona-option-icon especialista-avatar"><span>{simboloEspecialista(especialista.id)}</span></span>
+                          <span className="persona-option-name">{especialista.nome.replace(/^(Especialista em|Analista de) /, '')}</span>
+                          <span className="persona-option-check" aria-hidden="true">{marcada ? '✓' : ''}</span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </>
+              )}
+              <span className="persona-group-title">Consumidores <small>· a reação de diferentes perfis de cliente</small></span>
               <div className="persona-options">
                 {personas.map((persona) => {
                   const marcada = escolhidas.includes(persona.id)
@@ -298,7 +328,7 @@ export default function HomePage({ personas, carregando, erro, aoAvaliar }: Home
                       type="button"
                       className={`persona-option${marcada ? ' is-selected' : ''}`}
                       aria-pressed={marcada}
-                      title={travada ? `Mantenha pelo menos ${MIN_AGENTES} consumidores` : persona.prioridades}
+                      title={travada ? `Mantenha pelo menos ${MIN_AGENTES} agentes` : persona.prioridades}
                       onClick={() => alternarPersona(persona.id)}
                     >
                       <span className={`persona-option-icon avatar-${persona.id}`}><img src={imagemPersona(persona.id)} alt="" /></span>

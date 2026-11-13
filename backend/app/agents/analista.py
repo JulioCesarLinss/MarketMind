@@ -1,10 +1,11 @@
-"""Agente analista: lê o debate inteiro e escreve o relatório para o empreendedor.
+"""Agente analista: junta as opiniões dos consumidores e os pareceres dos especialistas,
+DESCARTA o que foi extrapolado e escreve o relatório final para o empreendedor.
 
 Divisão de trabalho:
-    - NÚMEROS (interesse médio, decisões, preço máximo, quem mudou): calculados pelo código,
+    - NÚMEROS (interesse médio, decisões, preço máximo, notas dos especialistas): calculados pelo código,
       em `calcular_indicadores`. A IA recebe esses números prontos e não pode inventar outros.
-    - TEXTO (resumo, elogios, objeções, recomendações, experimentos): escrito pela IA,
-      com base SOMENTE no que as personas disseram.
+    - TEXTO (resumo, elogios, objeções, recomendações, experimentos, opiniões descartadas): escrito pela IA,
+      com base SOMENTE no que os agentes disseram e que resistiu ao filtro.
 """
 
 import logging
@@ -19,41 +20,117 @@ from app.models.schemas import (
     IndicadorPersona,
     Indicadores,
     MensagemDebate,
+    MensagemParecer,
     Relatorio,
     ResultadoSimulacao,
 )
 
 log = logging.getLogger(__name__)
 
-SISTEMA_ANALISTA = """Você é um analista de mercado que ajuda pequenos empreendedores a entender a reação de consumidores à sua oferta.
-Você recebe: os dados do negócio, o debate entre consumidores sintéticos (2 rodadas) e indicadores já calculados.
+SISTEMA_ANALISTA = """Você é o analista-chefe que entrega o relatório final a um pequeno empreendedor.
+Você recebe: os dados do negócio, os FATOS CALCULADOS pelo sistema, as opiniões individuais de consumidores sintéticos,
+os pareceres individuais de especialistas e indicadores já calculados. Ninguém conversou com ninguém: cada um opinou sozinho.
 
-Regras:
-- Ignore objeções técnicas que um cliente comum não saberia avaliar (ex.: como um alimento esquenta no micro-ondas); priorize o que importa no dia a dia de quem compra.
-- Baseie-se SOMENTE no debate e nos dados. Cada elogio e objeção deve indicar entre parênteses quem disse (ex.: "(Econômico, Crítico)").
+Seu trabalho tem 3 etapas:
+1. COMPILAR: junte o que consumidores e especialistas disseram, agrupando os pontos repetidos.
+2. FILTRAR (seja crítico com as opiniões, não com o negócio): DESCARTE e liste em "opinioes_descartadas" toda opinião que:
+   - contradiz os fatos calculados (ex.: chamar de caro um preço que está abaixo da média dos concorrentes ou da região;
+     falar em prejuízo quando a margem é positiva);
+   - exige provas que um negócio novo não tem (fotos, certificados, avaliações, "qualidade comprovada");
+   - faz afirmação técnica sem base nos dados (ex.: como um alimento esquenta no micro-ondas);
+   - critica algo que FOI informado como se não tivesse sido (ex.: "não tem entrega" quando os canais citam delivery);
+   - inventa números ou características que ninguém informou.
+   Formato: "Quem: o que disse — por que foi descartada". Não use as opiniões descartadas no resto do relatório.
+3. RELATAR: escreva o relatório só com o que resistiu ao filtro. Seja equilibrado: nem duro por padrão, nem otimista sem base.
+   Dê mais peso a um ponto quando ele aparece em consumidores E especialistas.
+
+Regras do relatório:
+- Cada elogio e objeção indica entre parênteses quem disse (ex.: "(Econômico, Especialista em Marketing)").
 - Os números já estão calculados: use-os como estão. Não recalcule nem invente números, percentuais ou estatísticas.
-- Priorize o que apareceu em mais de uma persona e o que fez alguém mudar de opinião.
-- Se houver referência de mercado, compare o preço da oferta com as faixas (popular, intermediária, premium) e com o nível de concorrência na região, deixando claro que são valores aproximados da internet.
+- Preço: use os fatos calculados e a "Avaliação do preço" dos indicadores. Se o preço está abaixo da média ou a maioria pagaria
+  o preço cobrado, NÃO diga que é caro nem recomende baixar.
+- Se houver referência de mercado, compare o preço com as faixas (popular, intermediária, premium) e com a concorrência na região,
+  deixando claro que são valores aproximados da internet.
 - Se houver "Viabilidade financeira", use os números como estão: diga se o preço cobre o custo, se o lucro bate com o esperado,
-  quanto lucraria nos cenários de clientes por dia e, se houver investimento, em quanto tempo se paga. Relacione com o debate e
-  com a concorrência (ex.: "com 20 clientes por dia o lucro seria de R$ X por mês; com concorrência alta, valide esse movimento").
+  quanto lucraria nos cenários de clientes por dia e, se houver investimento, em quanto tempo se paga.
   NÃO fale em ponto de equilíbrio. Lembre que a conta não inclui impostos nem salários de funcionários e que negócios novos
   costumam levar meses para lucrar. Sem essa seção, não fale de lucro.
-- Se a oferta tiver entrega, avalie se o modelo informado é confiável para este produto (prazo, taxa, área, riscos) com base no que as personas disseram.
-- Recomendações: concretas, baratas e viáveis para um pequeno negócio DESTE ramo, cada uma ligada a uma objeção. Aproveite as boas sugestões que as próprias personas deram ao dono.
-- Preço: use a "Avaliação do preço" dos indicadores. Se a maioria pagaria o preço cobrado, NÃO recomende baixar o preço.
-- Experimentos: testes rápidos com clientes reais, dizendo o que fazer e o que medir, ADEQUADOS A ESTE RAMO e ao jeito como ele vende.
-  Amostra grátis, degustação e brinde NÃO são o padrão: em restaurante, marmita, delivery e na maioria dos serviços eles dão
-  prejuízo e não mostram se o cliente pagaria. Sugira no máximo UM experimento com algo gratuito, e só se fizer sentido no ramo.
-  Prefira testes em que o cliente paga, por exemplo:
-  · comida, marmita e delivery: combo ou kit de lançamento, plano semanal ou mensal, cupom para a 2ª compra, comparar duas
-    versões do cardápio ou da foto no app, pesquisa rápida após a entrega, parceria com empresas ou condomínios próximos;
-  · serviços (barbearia, estética, aulas, consertos): pacote ou assinatura, horário com preço diferente, programa de indicação,
-    pré-venda de pacotes;
-  · lojas e produtos: pré-venda, kit, frete grátis acima de um valor, testar dois preços ou dois anúncios.
-  Diga sempre o que medir (vendas, recompra em X dias, ticket médio, quantos usaram o cupom...).
+- Se a oferta tiver entrega, avalie se o modelo informado é confiável para este produto.
+- Recomendações: concretas, baratas e viáveis para um pequeno negócio DESTE ramo, cada uma ligada a um ponto do relatório.
+  Aproveite as boas recomendações dos especialistas e as sugestões dos consumidores.
+- Experimentos: testes rápidos com clientes reais, dizendo o que fazer e o que medir, ADEQUADOS A ESTE RAMO.
+  Amostra grátis, degustação e brinde NÃO são o padrão (no máximo UM, e só se fizer sentido no ramo). Prefira testes em que o
+  cliente paga: combo de lançamento, plano semanal, cupom para a 2ª compra, pacote, pré-venda, programa de indicação,
+  comparar duas versões do anúncio ou do cardápio. Diga o que medir (vendas, recompra em X dias, ticket médio...).
 - Linguagem responsável: fale em "interesse simulado" e "hipóteses a validar". NUNCA fale em chance de sucesso, garantia ou previsão de vendas.
 - Português do Brasil, direto, para quem não é especialista."""
+
+
+# ---------- Filtro pelo CÓDIGO (antes da IA): opiniões extrapoladas que sempre são descartadas ----------
+# Só nas opiniões dos consumidores: nos especialistas, recomendar "fotos reais" na divulgação é conselho legítimo.
+PADROES_EXTRAPOLADOS = [
+    (r"\bprovas?\b|\bprovar (a|que|qualidade)|comprov|evid[eê]nci|garantia de qualidade",
+     "exige prova de qualidade que um negócio novo ainda não tem"),
+    (r"\bfotos?\b|imagens? (reais|do produto)", "cobra fotos, mas a avaliação é feita sobre uma descrição em texto"),
+    (r"certifica|\bselos?\b|\blaudos?\b", "exige certificação que não foi pedida para este ramo"),
+    (r"avalia[cç](ão|ões) (online|de clientes|no ifood|na internet)|\breviews?\b|depoimentos",
+     "exige avaliações de clientes que um negócio novo ainda não tem"),
+]
+PADRAO_CARO = r"\bcaro\b|pre[cç]o (alto|elevado|salgado)|pesa no bolso"
+ABAIXO_PARA_FILTRAR_CARO = 0.85  # preço 15%+ abaixo da referência: chamar de caro contradiz os fatos
+
+
+def _referencia_de_preco(negocio: dict, pesquisa) -> float | None:
+    """Menor referência entre a média dos concorrentes informados e a média do mercado (a mais conservadora)."""
+    refs = []
+    precos_conc = [float(c.get("preco") or 0) for c in (negocio.get("concorrentes") or []) if c.get("preco")]
+    if precos_conc:
+        refs.append(sum(precos_conc) / len(precos_conc))
+    if pesquisa is not None and getattr(pesquisa, "media_geral", None):
+        refs.append(pesquisa.media_geral)
+    return min(refs) if refs else None
+
+
+def _motivo(texto: str, preco_abaixo: bool) -> str | None:
+    import re
+
+    t = texto.lower()
+    for padrao, motivo in PADROES_EXTRAPOLADOS:
+        if re.search(padrao, t):
+            return motivo
+    if preco_abaixo and re.search(PADRAO_CARO, t):
+        return "chama o preço de caro, mas ele está bem abaixo da média dos concorrentes/região (fato calculado)"
+    return None
+
+
+def filtrar_extrapoladas(resultado: ResultadoSimulacao, negocio: dict) -> tuple[ResultadoSimulacao, list[str]]:
+    """Devolve (cópia do resultado SEM os trechos extrapolados dos consumidores, lista do que foi descartado).
+    A cópia é o que o analista lê; o resultado original (e o feed) não muda."""
+    import re
+
+    preco = float(negocio.get("preco") or 0)
+    ref = _referencia_de_preco(negocio, resultado.pesquisa)
+    preco_abaixo = bool(ref and preco and preco <= ref * ABAIXO_PARA_FILTRAR_CARO)
+    descartadas: list[str] = []
+    limpas = []
+    for m in resultado.mensagens:
+        o = m.opiniao
+        nome = m.persona_nome.replace("Consumidor ", "")
+
+        def manter(texto: str) -> bool:
+            motivo = _motivo(texto, preco_abaixo)
+            if motivo:
+                descartadas.append(f"{nome}: \"{texto.strip()}\" — {motivo}")
+            return motivo is None
+
+        frases = [f for f in re.split(r"(?<=[.!?])\s+", o.fala) if f.strip()]
+        nova = o.model_copy(update={
+            "fala": " ".join(f for f in frases if manter(f)) or "(sem argumentos válidos)",
+            "objecoes": [x for x in o.objecoes if manter(x)],
+            "o_que_mudaria": o.o_que_mudaria if not o.o_que_mudaria or manter(o.o_que_mudaria) else "",
+        })
+        limpas.append(m.model_copy(update={"opiniao": nova}))
+    return resultado.model_copy(update={"mensagens": limpas}), list(dict.fromkeys(descartadas))
 
 
 TOLERANCIA_PRECO = 0.97  # 118,30 para um preço de 119 conta como "pagaria" (a IA costuma tirar uns centavos)
@@ -100,11 +177,16 @@ def calcular_indicadores(resultado: ResultadoSimulacao, preco_ofertado: float) -
         )
         for m1, m2, mudou in resultado.comparar_rodadas()
     ]
-    r1, r2 = resultado.da_rodada(1), resultado.da_rodada(2)
+    r1 = resultado.da_rodada(1)
+    r2 = resultado.da_rodada(2) or r1  # sem debate (padrão agora), a opinião final é a única que existe
     precos = [p.preco_maximo for p in por_persona if p.preco_maximo is not None]
     aceitam, avaliacao, referencia, mediana = avaliar_preco(por_persona, preco_ofertado)
+    notas = [m.parecer.nota for m in resultado.pareceres]
     return Indicadores(
         preco_ofertado=preco_ofertado,
+        nota_media_especialistas=round(mean(notas), 1) if notas else None,
+        vereditos_especialistas={v: sum(m.parecer.veredito == v for m in resultado.pareceres)
+                                 for v in ("favoravel", "favoravel_com_ajustes", "desfavoravel")} if notas else {},
         interesse_medio_r1=round(mean(m.opiniao.interesse for m in r1), 1) if r1 else 0,
         interesse_medio_r2=round(mean(m.opiniao.interesse for m in r2), 1) if r2 else 0,
         decisoes_r2={d: sum(m.opiniao.compraria == d for m in r2) for d in ("sim", "talvez", "nao")},
@@ -121,7 +203,7 @@ def calcular_indicadores(resultado: ResultadoSimulacao, preco_ofertado: float) -
 def _transcrever(m: MensagemDebate) -> str:
     o = m.opiniao
     linhas = [
-        f"### {m.persona_nome} — rodada {m.rodada} (interesse {o.interesse}/10, compraria: {o.compraria}"
+        f"### {m.persona_nome} (interesse {o.interesse}/10, compraria: {o.compraria}"
         + (f", pagaria até R$ {o.preco_maximo:.2f}" if o.preco_maximo is not None else "") + ")",
         f'Fala: "{o.fala}"',
     ]
@@ -134,13 +216,38 @@ def _transcrever(m: MensagemDebate) -> str:
     return "\n".join(linhas)
 
 
-def _formatar_indicadores(ind: Indicadores) -> str:
+VEREDITOS = {"favoravel": "favorável", "favoravel_com_ajustes": "favorável com ajustes", "desfavoravel": "desfavorável"}
+PRECO_ESPECIALISTA = {"baixo": "baixo", "adequado": "adequado", "alto": "alto"}
+
+
+def _transcrever_parecer(m: MensagemParecer) -> str:
+    p = m.parecer
     linhas = [
-        f"- Preço ofertado: R$ {ind.preco_ofertado:.2f}",
-        f"- Interesse médio: {ind.interesse_medio_r1} na rodada 1 → {ind.interesse_medio_r2} na rodada 2 (escala 0 a 10)",
-        f"- Decisões na rodada 2: {ind.decisoes_r2['sim']} sim, {ind.decisoes_r2['talvez']} talvez, {ind.decisoes_r2['nao']} não",
-        f"- Mudaram de posição: {ind.mudaram_de_posicao} de {len(ind.por_persona)}",
+        f"### {m.especialista_nome} — {m.area} (nota {p.nota}/10, {VEREDITOS[p.veredito]}, preço {PRECO_ESPECIALISTA[p.avaliacao_preco]}"
+        + (f", sugere R$ {p.preco_sugerido:.2f}" if p.preco_sugerido is not None else "") + ")",
+        f'Resumo: "{p.resumo}"',
     ]
+    if p.pontos_fortes:
+        linhas.append("Pontos fortes: " + "; ".join(p.pontos_fortes))
+    if p.riscos:
+        linhas.append("Riscos: " + "; ".join(p.riscos))
+    if p.recomendacoes:
+        linhas.append("Recomendações: " + "; ".join(p.recomendacoes))
+    return "\n".join(linhas)
+
+
+def _formatar_indicadores(ind: Indicadores) -> str:
+    linhas = [f"- Preço ofertado: R$ {ind.preco_ofertado:.2f}"]
+    if ind.por_persona:
+        linhas += [
+            f"- Interesse médio dos consumidores: {ind.interesse_medio_r2} (escala 0 a 10)",
+            f"- Decisões dos consumidores: {ind.decisoes_r2['sim']} sim, {ind.decisoes_r2['talvez']} talvez, {ind.decisoes_r2['nao']} não",
+        ]
+    if ind.nota_media_especialistas is not None:
+        v = ind.vereditos_especialistas
+        linhas.append(f"- Nota média dos especialistas: {ind.nota_media_especialistas}/10 "
+                      f"({v.get('favoravel', 0)} favoráveis, {v.get('favoravel_com_ajustes', 0)} com ajustes, "
+                      f"{v.get('desfavoravel', 0)} desfavoráveis)")
     if ind.preco_maximo_medio is not None:
         linhas.append(f"- Preço máximo médio que pagariam: R$ {ind.preco_maximo_medio:.2f}")
     total = len(ind.por_persona)
@@ -152,23 +259,18 @@ def _formatar_indicadores(ind: Indicadores) -> str:
                             f"R$ {ind.preco_referencia or 0:.2f}"),
         "sem_dados": "sem dados suficientes sobre preço",
     }
-    linhas.append(f"- Avaliação do preço: {textos_preco[ind.avaliacao_preco]}")
-    for p in ind.por_persona:
-        linhas.append(
-            f"- {p.persona_nome}: interesse {p.interesse_r1} → {p.interesse_r2}, "
-            f"{p.compraria_r1} → {p.compraria_r2}{' (mudou)' if p.mudou else ''}"
-        )
+    if ind.por_persona:
+        linhas.append(f"- Avaliação do preço pelos consumidores: {textos_preco[ind.avaliacao_preco]}")
     return "\n".join(linhas)
 
 
 def montar_pedido(negocio: dict, resultado: ResultadoSimulacao, indicadores: Indicadores, financeiro=None) -> str:
-    rodadas = "\n\n".join(
-        f"## Rodada {n}\n" + "\n\n".join(_transcrever(m) for m in resultado.da_rodada(n))
-        for n in range(1, resultado.rodadas + 1)
-    )
+    consumidores = "\n\n".join(_transcrever(m) for m in resultado.da_rodada(1)) or "(nenhum consumidor participou)"
+    especialistas = "\n\n".join(_transcrever_parecer(m) for m in resultado.pareceres) or "(nenhum especialista participou)"
     return (
         f"{formatar_negocio(negocio, resultado.pesquisa)}\n\n"
-        f"# Debate entre os consumidores sintéticos\n{rodadas}\n\n"
+        f"# Opiniões individuais dos consumidores sintéticos\n{consumidores}\n\n"
+        f"# Pareceres individuais dos especialistas\n{especialistas}\n\n"
         f"# Indicadores (já calculados, use como estão)\n{_formatar_indicadores(indicadores)}\n\n"
         + (f"# Viabilidade financeira (já calculada, use como está)\n{formatar_financeiro(financeiro)}\n\n" if financeiro else "")
         +
@@ -186,10 +288,16 @@ async def analisar(provider: LLMProvider | None, negocio: dict, resultado: Resul
         return relatorio
     inicio, tokens_antes = time.perf_counter(), provider.total_tokens()
     try:
-        pedido = montar_pedido(negocio, resultado, indicadores, relatorio.financeiro)
+        # O código tira antes os trechos claramente extrapolados; a IA ainda pode descartar outros
+        filtrado, descartadas_codigo = filtrar_extrapoladas(resultado, negocio)
+        pedido = montar_pedido(negocio, filtrado, indicadores, relatorio.financeiro)
+        if descartadas_codigo:
+            pedido += ("\n\n(Já foram retirados pelo sistema, por serem extrapolados, e NÃO devem ser usados: "
+                       + "; ".join(descartadas_codigo) + ")")
         analise, origem = await provider.gerar_com_origem(
             SISTEMA_ANALISTA, [{"role": "user", "content": pedido}], AnaliseDebate
         )
+        analise.opinioes_descartadas = list(dict.fromkeys(descartadas_codigo + analise.opinioes_descartadas))
         relatorio.analise, relatorio.origem_analise = analise, origem
     except Exception as erro:  # noqa: BLE001 — o relatório sem texto ainda é útil
         log.exception("Agente analista falhou")

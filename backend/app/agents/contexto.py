@@ -75,6 +75,41 @@ def formatar_entrega(entrega: dict | None) -> str:
     return "- Entrega: " + "; ".join(partes)
 
 
+def _comparar(preco: float, referencia: float) -> str:
+    """'40% abaixo da' / 'praticamente igual à' / '15% acima da' (até 5% de diferença conta como igual)."""
+    diferenca = (preco - referencia) / referencia * 100
+    if abs(diferenca) <= 5:
+        return "praticamente igual à"
+    return f"{abs(diferenca):.0f}% {'abaixo' if diferenca < 0 else 'acima'} da"
+
+
+def fatos_calculados(negocio: dict, pesquisa: "PesquisaMercado | None" = None) -> list[str]:
+    """Comparações feitas pelo CÓDIGO, que os agentes não podem contradizer
+    (ex.: ninguém pode chamar de caro um preço 60% abaixo da média da região)."""
+    from app.services.financeiro import lucro_por_venda
+
+    preco = float(negocio.get("preco") or 0)
+    if preco <= 0:
+        return []
+    fatos = []
+    precos_conc = [float(c.get("preco") or 0) for c in (negocio.get("concorrentes") or []) if c.get("preco")]
+    if precos_conc:
+        media = sum(precos_conc) / len(precos_conc)
+        fatos.append(f"O preço ({_reais(preco)}) está {_comparar(preco, media)} média dos concorrentes informados ({_reais(media)}).")
+    if pesquisa is not None and pesquisa.media_geral:
+        fatos.append(f"O preço está {_comparar(preco, pesquisa.media_geral)} média de preços encontrada na região "
+                     f"({_reais(pesquisa.media_geral)}, {pesquisa.total_precos} preços).")
+    custos = negocio.get("custos") or {}
+    if custos and custos.get("custo_variavel_unitario"):
+        lucro = lucro_por_venda(preco, float(custos["custo_variavel_unitario"]), float(custos.get("taxa_plataforma_pct") or 0))
+        if lucro > 0:
+            fatos.append(f"Cada venda deixa {_reais(lucro)} de margem ({lucro / preco * 100:.0f}% do preço), "
+                         "já descontados o custo de produção e a taxa da plataforma.")
+        else:
+            fatos.append(f"Cada venda dá prejuízo de {_reais(-lucro)}: o preço não cobre o custo de produção e a taxa.")
+    return fatos
+
+
 def formatar_negocio(negocio: dict, pesquisa: "PesquisaMercado | None" = None) -> str:
     linhas = [
         "## Oferta a avaliar (dados informados pelo empreendedor)",
@@ -95,4 +130,8 @@ def formatar_negocio(negocio: dict, pesquisa: "PesquisaMercado | None" = None) -
         linhas.append("\n## Concorrentes\n- Nenhum concorrente foi informado pelo empreendedor.")
     if pesquisa is not None and pesquisa.tem_dados():
         linhas.append("\n" + formatar_pesquisa(pesquisa))
+    fatos = fatos_calculados(negocio, pesquisa)
+    if fatos:
+        linhas.append("\n## Fatos calculados pelo sistema (estão certos: não contradiga)")
+        linhas += [f"- {f}" for f in fatos]
     return "\n".join(linhas)

@@ -2,8 +2,16 @@ import { useEffect, useRef, useState } from 'react'
 import HomePage from './pages/HomePage'
 import DebatePage from './pages/DebatePage'
 import ResultPage from './pages/ResultPage'
-import { buscarPersonas, conectarFeed, criarSimulacao } from './services/api'
-import type { MensagemDebate, NegocioPayload, PersonaPublica, PesquisaMercado, ResultadoSimulacao } from './types'
+import { buscarEspecialistas, buscarPersonas, conectarFeed, criarSimulacao } from './services/api'
+import type {
+  EspecialistaPublico,
+  MensagemDebate,
+  MensagemParecer,
+  NegocioPayload,
+  PersonaPublica,
+  PesquisaMercado,
+  ResultadoSimulacao,
+} from './types'
 import LandingPage from './pages/LandingPage'
 
 type Tela = 'apresentacao' | 'inicio' | 'debate' | 'resultado'
@@ -11,14 +19,15 @@ type Tela = 'apresentacao' | 'inicio' | 'debate' | 'resultado'
 export default function App() {
   const [tela, setTela] = useState<Tela>('apresentacao')
   const [personas, setPersonas] = useState<PersonaPublica[]>([])
+  const [especialistas, setEspecialistas] = useState<EspecialistaPublico[]>([])
   const [mensagens, setMensagens] = useState<MensagemDebate[]>([])
+  const [pareceres, setPareceres] = useState<MensagemParecer[]>([])
   const [resultado, setResultado] = useState<ResultadoSimulacao | null>(null)
   const [pesquisa, setPesquisa] = useState<PesquisaMercado | null>(null)
   const [carregando, setCarregando] = useState(false)
   const [erroFormulario, setErroFormulario] = useState('')
   const [erroFeed, setErroFeed] = useState('')
   const [statusTexto, setStatusTexto] = useState('Preparando os agentes para a avaliação...')
-  const [rodadaAtual, setRodadaAtual] = useState<1 | 2>(1)
   const fonteRef = useRef<EventSource | null>(null)
 
   function abrirFormulario() {
@@ -32,6 +41,9 @@ export default function App() {
       .catch(() => {
         setErroFormulario('Não foi possível conectar à API do MarketMind. Confira se o backend está rodando em http://localhost:8000.')
       })
+    buscarEspecialistas()
+      .then(setEspecialistas)
+      .catch(() => setEspecialistas([])) // backend antigo, sem especialistas: o resto continua funcionando
 
     return () => fonteRef.current?.close()
   }, [])
@@ -53,39 +65,39 @@ export default function App() {
   }
   }, [])
 
-  // Só as personas que participam desta simulação (o usuário escolhe quantas)
-  const [participantes, setParticipantes] = useState<string[]>([])
-  const personasDaSimulacao = participantes.length
-    ? personas.filter((p) => participantes.includes(p.id))
-    : personas
+  // Só os agentes que participam desta simulação (o usuário escolhe quais)
+  const [participantes, setParticipantes] = useState<string[] | null>(null)
+  const personasDaSimulacao = participantes ? personas.filter((p) => participantes.includes(p.id)) : personas
+  const especialistasDaSimulacao = participantes ? especialistas.filter((e) => participantes.includes(e.id)) : especialistas
 
   async function avaliar(negocio: NegocioPayload, demo: boolean, escolhidas: string[]) {
     setCarregando(true)
     setErroFormulario('')
     setErroFeed('')
     setMensagens([])
+    setPareceres([])
     setResultado(null)
     setPesquisa(null)
-    setRodadaAtual(1)
     setStatusTexto(`Iniciando os ${escolhidas.length} agentes...`)
     fonteRef.current?.close()
     fonteRef.current = null
 
     try {
       const simulacao = await criarSimulacao(negocio, demo, escolhidas)
-      setParticipantes(simulacao.personas ?? escolhidas)
+      setParticipantes([...(simulacao.personas ?? []), ...(simulacao.especialistas ?? [])].length
+        ? [...(simulacao.personas ?? []), ...(simulacao.especialistas ?? [])]
+        : escolhidas)
       setTela('debate')
       setStatusTexto('Os agentes estão lendo as informações do produto...')
 
       fonteRef.current = conectarFeed(simulacao.id, {
         aoReceberMensagem: (mensagem) => {
           setMensagens((atuais) => [...atuais, mensagem])
-          if (mensagem.rodada === 2) {
-            setRodadaAtual(2)
-            setStatusTexto('Os agentes estão reagindo às opiniões uns dos outros...')
-          } else {
-            setStatusTexto('As primeiras avaliações estão chegando...')
-          }
+          setStatusTexto('As avaliações estão chegando...')
+        },
+        aoReceberParecer: (parecer) => {
+          setPareceres((atuais) => [...atuais, parecer])
+          setStatusTexto('As avaliações estão chegando...')
         },
         aoIniciarPesquisa: () => {
           setStatusTexto('O pesquisador está buscando preços e lojas parecidas na região...')
@@ -95,14 +107,13 @@ export default function App() {
           setStatusTexto('Pesquisa de mercado concluída. Os agentes estão lendo as informações do produto...')
         },
         aoIniciarAnalise: () => {
-          setRodadaAtual(2)
-          setStatusTexto('Debate concluído. O analista está lendo tudo e escrevendo o relatório...')
+          setStatusTexto('Todos avaliaram. O analista está juntando as opiniões, descartando exageros e escrevendo o relatório...')
         },
         aoFinalizar: (resultadoFinal) => {
           setMensagens(resultadoFinal.mensagens)
+          setPareceres(resultadoFinal.pareceres ?? [])
           setResultado(resultadoFinal)
-          setRodadaAtual(2)
-          setStatusTexto('Debate concluído. Preparando o panorama da avaliação...')
+          setStatusTexto('Avaliação concluída. Preparando o panorama...')
           setTela('resultado')
         },
         aoFalhar: (mensagem) => {
@@ -126,11 +137,11 @@ export default function App() {
     fonteRef.current = null
     setTela('inicio')
     setMensagens([])
+    setPareceres([])
     setResultado(null)
     setPesquisa(null)
     setErroFeed('')
     setErroFormulario('')
-    setRodadaAtual(1)
     setStatusTexto('Preparando os agentes para a avaliação...')
   }
 
@@ -143,15 +154,16 @@ export default function App() {
   }
 
   if (tela === 'resultado' && resultado) {
-    return <ResultPage personas={personasDaSimulacao} resultado={resultado} onNovaAvaliacao={novaAvaliacao} />
+    return <ResultPage personas={personasDaSimulacao} especialistas={especialistasDaSimulacao} resultado={resultado} onNovaAvaliacao={novaAvaliacao} />
   }
 
   if (tela === 'debate') {
     return (
       <DebatePage
         personas={personasDaSimulacao}
+        especialistas={especialistasDaSimulacao}
         mensagens={mensagens}
-        rodadaAtual={rodadaAtual}
+        pareceres={pareceres}
         pesquisa={pesquisa}
         statusTexto={statusTexto}
         erro={erroFeed}
@@ -160,5 +172,5 @@ export default function App() {
     )
   }
 
-  return <HomePage personas={personas} carregando={carregando} erro={erroFormulario} aoAvaliar={avaliar} />
+  return <HomePage personas={personas} especialistas={especialistas} carregando={carregando} erro={erroFormulario} aoAvaliar={avaliar} />
 }

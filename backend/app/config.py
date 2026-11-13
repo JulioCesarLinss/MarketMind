@@ -30,6 +30,11 @@ class Settings:
     # Quantas chamadas à IA ao mesmo tempo (baixo = menos risco de estourar limite por minuto)
     llm_concorrencia: int = int(_env("LLM_CONCORRENCIA", "2") or 2)
 
+    # Especialistas: provedor próprio (padrão Gemini) para dividir os tokens com os consumidores (Groq).
+    # Modelo vazio = usa LLM_FALLBACK_MODEL_PERSONAS (o modelo do Gemini já configurado como reserva).
+    llm_especialistas_provider: str = _env("LLM_ESPECIALISTAS_PROVIDER", "gemini").lower()
+    llm_model_especialistas: str = _env("LLM_MODEL_ESPECIALISTAS")
+
     # Esforço de raciocínio dos modelos gpt-oss (low | medium | high; vazio = não enviar).
     # "low" gasta bem menos tokens.
     llm_reasoning_effort: str = _env("LLM_REASONING_EFFORT", "low").lower()

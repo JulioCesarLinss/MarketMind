@@ -27,8 +27,46 @@ export interface PersonaPublica {
   prioridades: string
 }
 
+// ---- Especialistas: cada um escreve um parecer sozinho (sem debate) ----
+
+export type Veredito = 'favoravel' | 'favoravel_com_ajustes' | 'desfavoravel'
+
+export const NOMES_VEREDITO: Record<Veredito, string> = {
+  favoravel: 'Favorável',
+  favoravel_com_ajustes: 'Favorável com ajustes',
+  desfavoravel: 'Desfavorável',
+}
+
+export interface ParecerEspecialista {
+  resumo: string
+  nota: number
+  veredito: Veredito
+  pontos_fortes: string[]
+  riscos: string[]
+  recomendacoes: string[]
+  avaliacao_preco: 'baixo' | 'adequado' | 'alto'
+  preco_sugerido: number | null
+}
+
+export interface MensagemParecer {
+  especialista_id: string
+  especialista_nome: string
+  area: string
+  parecer: ParecerEspecialista
+  origem: string
+  duracao_segundos: number
+}
+
+export interface EspecialistaPublico {
+  id: string
+  nome: string
+  area: string
+  foco: string
+}
+
 export interface ResultadoSimulacao {
   mensagens: MensagemDebate[]
+  pareceres?: MensagemParecer[]
   rodadas: number
   provedor_principal: string
   tokens_usados: number
@@ -122,6 +160,8 @@ export interface IndicadorPersona {
 // Números calculados pelo backend (não pela IA)
 export interface Indicadores {
   preco_ofertado: number
+  nota_media_especialistas?: number | null
+  vereditos_especialistas?: Partial<Record<Veredito, number>>
   interesse_medio_r1: number
   interesse_medio_r2: number
   decisoes_r2: { sim: number; talvez: number; nao: number }
@@ -143,6 +183,7 @@ export interface AnaliseDebate {
   pontos_de_atencao: string[]
   recomendacoes: string[]
   experimentos: string[]
+  opinioes_descartadas?: string[] // o que o analista tirou por ser extrapolado
 }
 
 // ---- Viabilidade financeira (calculada pelo backend, sem IA; só com custos informados) ----
@@ -200,7 +241,8 @@ export interface Relatorio {
 export interface SimulacaoCriada {
   id: string
   status: string
-  personas: string[] // ids das personas que participam
+  personas: string[] // ids dos consumidores que participam
+  especialistas?: string[] // ids dos especialistas que participam
 }
 
 export const MIN_AGENTES = 2 // mínimo de personas para haver debate

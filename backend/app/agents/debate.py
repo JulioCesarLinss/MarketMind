@@ -8,9 +8,9 @@ from app.models.schemas import MensagemDebate
 
 def pedido_rodada_1(negocio: dict, pesquisa=None) -> str:
     return (
-        "RODADA 1 — avaliação individual.\n\n"
+        "AVALIAÇÃO INDIVIDUAL.\n\n"
         f"{formatar_negocio(negocio, pesquisa)}\n\n"
-        "Avalie esta oferta a partir do seu perfil. Você ainda não ouviu nenhum outro consumidor."
+        "Avalie esta oferta a partir do seu perfil. Você não conhece a opinião de mais ninguém."
     )
 
 

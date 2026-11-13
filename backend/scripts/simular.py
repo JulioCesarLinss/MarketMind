@@ -14,10 +14,11 @@ import logging
 import sys
 from pathlib import Path
 
+from app.agents.especialistas import escolher_especialistas
 from app.agents.analista import analisar
 from app.agents.exemplos import NEGOCIOS
 from app.llm import criar_provider
-from app.llm.factory import ConfiguracaoLLMError
+from app.llm.factory import ConfiguracaoLLMError, criar_provider_especialistas
 from app.models.schemas import MensagemDebate, Relatorio, ResultadoSimulacao
 from app.services.orquestrador import Orquestrador
 from app.services.simulacoes import PesquisadorDemo
@@ -30,7 +31,7 @@ async def imprimir_fala(m: MensagemDebate) -> None:
     o = m.opiniao
     mudou = "  🔄 mudou de opinião" if o.mudou_de_opiniao else ""
     print(
-        f"\n[Rodada {m.rodada}] {m.persona_nome} — interesse {o.interesse}/10 "
+        f"\n[Consumidor] {m.persona_nome} — interesse {o.interesse}/10 "
         f"{ICONES.get(o.compraria, '')} {o.compraria}{mudou}"
     )
     print(f'  "{o.fala}"')
@@ -38,6 +39,20 @@ async def imprimir_fala(m: MensagemDebate) -> None:
         print(f"  Pagaria no máximo: R$ {o.preco_maximo:.2f}")
     if o.o_que_mudaria:
         print(f"  O que mudaria a decisão: {o.o_que_mudaria}")
+    print(f"  ({m.duracao_segundos}s via {m.origem})")
+
+
+VEREDITOS = {"favoravel": "✅ favorável", "favoravel_com_ajustes": "🟡 favorável com ajustes", "desfavoravel": "❌ desfavorável"}
+
+
+async def imprimir_parecer(m) -> None:
+    p = m.parecer
+    print(f"\n[Especialista] {m.especialista_nome} — nota {p.nota}/10 {VEREDITOS[p.veredito]} · preço {p.avaliacao_preco}"
+          + (f" (sugere R$ {p.preco_sugerido:.2f})" if p.preco_sugerido is not None else ""))
+    print(f'  "{p.resumo}"')
+    for titulo, itens in (("+", p.pontos_fortes), ("−", p.riscos), ("→", p.recomendacoes)):
+        for item in itens:
+            print(f"  {titulo} {item}")
     print(f"  ({m.duracao_segundos}s via {m.origem})")
 
 
@@ -93,6 +108,7 @@ def imprimir_relatorio(rel: Relatorio) -> None:
         ("Pontos de atenção", a.pontos_de_atencao),
         ("Recomendações", a.recomendacoes),
         ("Experimentos para validar com clientes reais", a.experimentos),
+        ("Opiniões descartadas pelo analista (extrapoladas)", a.opinioes_descartadas),
     ]:
         print(f"\n{titulo}:")
         for item in itens:
@@ -108,6 +124,7 @@ async def main() -> None:
     parser.add_argument("--negocio", choices=list(NEGOCIOS), default="cafeteria", help="negócio de exemplo")
     parser.add_argument("--sem-analista", action="store_true", help="só o debate, sem o relatório")
     parser.add_argument("--sem-pesquisa", action="store_true", help="pula a pesquisa de mercado na internet")
+    parser.add_argument("--sem-especialistas", action="store_true", help="só os consumidores, sem os pareceres")
     parser.add_argument("--salvar", help="caminho de um arquivo .json para salvar o resultado")
     args = parser.parse_args()
 
@@ -121,7 +138,13 @@ async def main() -> None:
     negocio = NEGOCIOS[args.negocio]
     print(f"Negócio: {negocio['tipo']} — {negocio['produto']} (R$ {negocio['preco']:.2f})")
 
-    orquestrador = Orquestrador(provider, concorrencia=args.concorrencia, ao_publicar=imprimir_fala)
+    especialistas = [] if args.sem_especialistas else escolher_especialistas()
+    provider_esp = provider if args.provider or not especialistas else criar_provider_especialistas()
+    if especialistas:
+        print(f"Especialistas via: {provider_esp.modelo}")
+    orquestrador = Orquestrador(provider, concorrencia=args.concorrencia, ao_publicar=imprimir_fala,
+                                especialistas=especialistas, provider_especialistas=provider_esp,
+                                ao_publicar_parecer=imprimir_parecer)
     pesquisa = None
     if not args.sem_pesquisa:
         print("\n  O pesquisador está buscando preços e lojas da região...")
@@ -134,7 +157,7 @@ async def main() -> None:
     imprimir_resumo(resultado)
 
     if not args.sem_analista:
-        print("\n  O analista está lendo o debate...")
+        print("\n  O analista está juntando as opiniões e filtrando o que foi extrapolado...")
         try:
             # Sem mock no fim: um relatório gravado de outro negócio seria enganoso
             analista = criar_provider(args.provider, papel="analista", mock_no_fim=False)

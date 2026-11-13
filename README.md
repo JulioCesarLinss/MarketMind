@@ -41,23 +41,25 @@ Usuário preenche o formulário
 Agente pesquisador ──► busca na internet preços de negócios parecidos na região (faixas popular,
         │                  intermediária e premium: média e desvio-padrão) e conta lojas do ramo no mapa
         ▼
-Agente de contexto ──► organiza dados do negócio + concorrentes + referência de mercado, identificando a origem de cada dado
+Agente de contexto ──► organiza dados do negócio + concorrentes + referência de mercado + FATOS CALCULADOS
+        │                  (ex.: "o preço está 60% abaixo da média da região"), que nenhum agente pode contradizer
+        ▼
+Avaliações individuais, sem conversa entre os agentes (o usuário escolhe quais participam, mínimo 2):
+        │   • 6 especialistas (Gemini): precificação, marketing, operações/entrega, mercado local,
+        │     experiência do cliente e consultor de pequenos negócios — um parecer cada, com nota e veredito
+        │   • 5 consumidores sintéticos (Groq): a reação de diferentes perfis de cliente
+        ▼
+Moderador / orquestrador ──► roda os dois grupos em paralelo, cada um no seu provedor de IA
         │
         ▼
-Consumidores sintéticos (até 5 personas, o usuário escolhe quais, mínimo 2; cada uma com prompt e memória próprios)
-        │   Rodada 1: cada persona avalia a oferta individualmente
-        │   Rodada 2: cada persona reage às opiniões das outras
-        ▼
-Moderador / orquestrador ──► controla as rodadas, distribui mensagens, salva o histórico
-        │
-        ▼
-Agente analista ──► lê todo o debate e consolida padrões, objeções e oportunidades
+Agente analista ──► compila tudo, DESCARTA as opiniões extrapoladas (o código já tira pedidos de prova e
+                    "caro" que contradiz os dados) e escreve o relatório final
         │
         ▼
 Calculadora financeira (sem IA) ──► margem de contribuição e ponto de equilíbrio
         │
         ▼
-Interface: feed do debate em tempo real + relatório final
+Interface: feed das avaliações em tempo real + relatório final
 ```
 
 ### 3. Componentes
@@ -66,12 +68,13 @@ Interface: feed do debate em tempo real + relatório final
 |---|---|---|
 | Agente pesquisador | Busca preços na internet (Tavily) e conta lojas do ramo no OpenStreetMap; calcula média, desvio-padrão e a posição do preço | Sim (planeja a busca e lê os preços; os números são calculados pelo código) |
 | Agente de contexto | Padroniza as informações do negócio, dos concorrentes e da referência de mercado | Não |
-| Personas | Avaliam a oferta segundo prioridades próprias (preço, qualidade, conveniência, diferenciação, proximidade) | Sim |
-| Moderador / orquestrador | Coordena rodadas e chamadas em paralelo, mantém o histórico | Não |
-| Agente analista | Gera o relatório a partir do histórico real do debate | Sim |
+| Especialistas | Parecer técnico individual, cada um na sua área (nota, veredito, pontos fortes, riscos, recomendações, preço) | Sim (Gemini) |
+| Consumidores (personas) | Avaliam a oferta segundo prioridades próprias (preço, qualidade, conveniência, diferenciação, proximidade) | Sim (Groq) |
+| Moderador / orquestrador | Roda consumidores e especialistas em paralelo, sem conversa entre eles | Não |
+| Agente analista | Compila as avaliações, descarta as extrapoladas e gera o relatório final | Sim |
 | Calculadora financeira | Fórmulas determinísticas sobre os custos informados | Não |
 
-**Por que multiagentes?** Não é um chatbot escrevendo cinco opiniões de uma vez. Cada consumidor tem instruções, preferências e memória próprias; as opiniões são geradas separadamente e depois confrontadas. O analista trabalha sobre o histórico real do debate.
+**Por que multiagentes?** Não é um chatbot escrevendo várias opiniões de uma vez. Cada especialista e cada consumidor tem instruções e prioridades próprias e opina sozinho, sem ver os outros; o analista compara as avaliações, descarta as exageradas e consolida o relatório.
 
 ### 4. Saída para o usuário
 

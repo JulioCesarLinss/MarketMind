@@ -18,10 +18,10 @@ O CORS já libera `http://localhost:5173` (porta padrão do Vite).
 ## Fluxo
 
 ```
-1. POST /simulacoes?demo=true&personas=economico&personas=critico   (dados do formulário)
+1. POST /simulacoes?demo=true&agentes=economico&agentes=precificacao   (dados do formulário)
        →  { "id": "bc7327ef54ca", "status": "rodando", "personas": ["economico", "exigente", ...] }
 2. GET  /simulacoes/{id}/stream  →  feed ao vivo, nesta ordem:
-       etapa {"etapa":"pesquisa"} → pesquisa (referência de mercado) → mensagem × (2 × personas escolhidas)
+       etapa {"etapa":"pesquisa"} → pesquisa (referência de mercado) → mensagem (1 por consumidor) e parecer (1 por especialista), misturados
        → etapa {"etapa":"analise"} → fim (resultado + relatório + pesquisa)
 3. GET  /simulacoes/{id}         →  tudo de uma vez (ex.: ao recarregar a página)
 ```
@@ -29,8 +29,9 @@ O CORS já libera `http://localhost:5173` (porta padrão do Vite).
 | Método | Rota | Para quê |
 |---|---|---|
 | `GET` | `/health` | API está de pé? |
-| `GET` | `/personas` | As 5 personas (id, nome, descrição, prioridades) para montar a escolha e os cards |
-| `POST` | `/simulacoes` | Inicia uma simulação. Query `demo=true` = sem IA; `personas=<id>` repetido = quais consumidores participam (mínimo 2; sem o parâmetro, todos; id inexistente ou só 1 → 422). A resposta traz `personas` (ids de quem participa) |
+| `GET` | `/personas` | Os 5 consumidores (id, nome, descrição, prioridades) |
+| `GET` | `/especialistas` | Os 6 especialistas (id, nome, área, foco) |
+| `POST` | `/simulacoes` | Inicia uma simulação. Query `demo=true` = sem IA; `agentes=<id>` repetido = quais consumidores e/ou especialistas participam (mínimo 2 no total; sem o parâmetro, todos; id inexistente → 422). A resposta traz `personas` e `especialistas` (ids de quem participa). Não há mais 2ª rodada: `resultado.rodadas = 1`, os pareceres vêm em `resultado.pareceres` e o analista lista o que descartou em `relatorio.analise.opinioes_descartadas` |
 | `GET` | `/simulacoes/{id}/stream` | Feed ao vivo (Server-Sent Events) |
 | `GET` | `/simulacoes/{id}` | Estado completo: `status`, `mensagens`, `resultado`, `erro`, `personas` |
 

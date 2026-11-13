@@ -1,7 +1,8 @@
 """Guarda as simulações em andamento e avisa quem está assistindo (feed ao vivo).
 
 Ordem dos eventos de uma simulação:
-    etapa {"etapa":"pesquisa"} → pesquisa (JSON) → mensagem × (2 × nº de agentes) → etapa {"etapa":"analise"} → fim
+    etapa {"etapa":"pesquisa"} → pesquisa (JSON) → mensagem (1 por consumidor) e parecer (1 por especialista),
+    misturados, na ordem em que ficam prontos → etapa {"etapa":"analise"} → fim
 (sem pesquisador configurado, os dois primeiros não aparecem)
 
 MVP: tudo em memória. Se o servidor reiniciar, as simulações somem (o SQLite vem depois).
@@ -17,10 +18,11 @@ from pathlib import Path
 from typing import Literal, Protocol
 
 from app.agents.analista import analisar
+from app.agents.especialistas import Especialista
 from app.agents.personas import Persona, escolher_personas
 from app.llm.base import LLMProvider
 from app.models.pesquisa import PesquisaMercado
-from app.models.schemas import MensagemDebate, ResultadoSimulacao
+from app.models.schemas import MensagemDebate, MensagemParecer, ResultadoSimulacao
 from app.services.orquestrador import Orquestrador
 
 log = logging.getLogger(__name__)
@@ -46,7 +48,7 @@ class PesquisadorDemo:
 
 @dataclass
 class Evento:
-    tipo: Literal["mensagem", "etapa", "pesquisa", "fim", "erro"]
+    tipo: Literal["mensagem", "parecer", "etapa", "pesquisa", "fim", "erro"]
     dados: str  # JSON pronto para enviar
 
 
@@ -63,7 +65,9 @@ class Simulacao:
     ouvintes: list[asyncio.Queue] = field(default_factory=list)
     tarefa: asyncio.Task | None = None
     teve_pesquisa: bool = False
-    personas: list[str] = field(default_factory=list)  # ids das personas que participam
+    personas: list[str] = field(default_factory=list)  # ids dos consumidores que participam
+    especialistas: list[str] = field(default_factory=list)  # ids dos especialistas que participam
+    pareceres: list[MensagemParecer] = field(default_factory=list)
 
     def avisar(self, evento: Evento) -> None:
         for fila in self.ouvintes:
@@ -77,6 +81,7 @@ class Simulacao:
         if self.pesquisa is not None:
             eventos.append(Evento("pesquisa", self.pesquisa.model_dump_json()))
         eventos += [Evento("mensagem", m.model_dump_json()) for m in self.mensagens]
+        eventos += [Evento("parecer", p.model_dump_json()) for p in self.pareceres]
         if self.etapa == "analise":
             eventos.append(Evento("etapa", ETAPA_ANALISE))
         if self.status == "concluida" and self.resultado:
@@ -100,14 +105,19 @@ class GerenciadorSimulacoes:
         provider_analista: LLMProvider | None,
         pesquisador: PesquisadorProtocolo | None = None,
         personas: list[Persona] | None = None,
+        especialistas: list[Especialista] | None = None,
+        provider_especialistas: LLMProvider | None = None,
     ) -> Simulacao:
-        personas = personas or escolher_personas()
-        sim = Simulacao(id=uuid.uuid4().hex[:12], negocio=negocio, personas=[p.id for p in personas])
+        personas = escolher_personas() if personas is None else personas
+        especialistas = especialistas or []
+        sim = Simulacao(id=uuid.uuid4().hex[:12], negocio=negocio, personas=[p.id for p in personas],
+                        especialistas=[e.id for e in especialistas])
         self._simulacoes[sim.id] = sim
         while len(self._simulacoes) > LIMITE_EM_MEMORIA:
             self._simulacoes.popitem(last=False)
         # Roda em segundo plano: a API responde na hora com o id
-        sim.tarefa = asyncio.create_task(self._executar(sim, provider, provider_analista, pesquisador, personas))
+        sim.tarefa = asyncio.create_task(self._executar(sim, provider, provider_analista, pesquisador, personas,
+                                                        especialistas, provider_especialistas))
         return sim
 
     async def _pesquisar(self, sim: Simulacao, pesquisador: PesquisadorProtocolo) -> PesquisaMercado | None:
@@ -130,17 +140,27 @@ class GerenciadorSimulacoes:
         provider_analista: LLMProvider | None,
         pesquisador: PesquisadorProtocolo | None,
         personas: list[Persona],
+        especialistas: list[Especialista] | None = None,
+        provider_especialistas: LLMProvider | None = None,
     ) -> None:
         async def ao_publicar(m: MensagemDebate) -> None:
             sim.mensagens.append(m)
             sim.avisar(Evento("mensagem", m.model_dump_json()))
 
+        async def ao_publicar_parecer(p: MensagemParecer) -> None:
+            sim.pareceres.append(p)
+            sim.avisar(Evento("parecer", p.model_dump_json()))
+
         try:
             # Pesquisa de mercado (só entra no contexto das personas se trouxe dados: ver formatar_negocio)
             pesquisa = await self._pesquisar(sim, pesquisador) if pesquisador else None
-            resultado = await Orquestrador(provider, personas=personas, ao_publicar=ao_publicar).executar(sim.negocio, pesquisa)
+            resultado = await Orquestrador(
+                provider, personas=personas, ao_publicar=ao_publicar,
+                especialistas=especialistas, provider_especialistas=provider_especialistas,
+                ao_publicar_parecer=ao_publicar_parecer,
+            ).executar(sim.negocio, pesquisa)
 
-            # Debate terminou: o analista escreve o relatório (o front pode mostrar "analisando...")
+            # Todos opinaram: o analista junta, filtra o que foi extrapolado e escreve o relatório
             sim.etapa = "analise"
             sim.avisar(Evento("etapa", ETAPA_ANALISE))
             resultado.relatorio = await analisar(provider_analista, sim.negocio, resultado)

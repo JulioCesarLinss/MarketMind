@@ -1,5 +1,7 @@
 import type {
+  EspecialistaPublico,
   MensagemDebate,
+  MensagemParecer,
   NegocioPayload,
   PersonaPublica,
   PesquisaMercado,
@@ -37,14 +39,20 @@ export async function buscarPersonas(): Promise<PersonaPublica[]> {
   return resposta.json() as Promise<PersonaPublica[]>
 }
 
+export async function buscarEspecialistas(): Promise<EspecialistaPublico[]> {
+  const resposta = await fetch(`${API_URL}/especialistas`)
+  if (!resposta.ok) throw new Error(await lerErro(resposta))
+  return resposta.json() as Promise<EspecialistaPublico[]>
+}
+
 export async function criarSimulacao(
   negocio: NegocioPayload,
   demo: boolean,
-  personas: string[],
+  agentes: string[], // ids de consumidores e/ou especialistas
 ): Promise<SimulacaoCriada> {
   const parametros = new URLSearchParams()
   if (demo) parametros.set('demo', 'true')
-  personas.forEach((id) => parametros.append('personas', id))
+  agentes.forEach((id) => parametros.append('agentes', id))
   const rota = `/simulacoes?${parametros}`
   const resposta = await fetch(`${API_URL}${rota}`, {
     method: 'POST',
@@ -58,6 +66,7 @@ export async function criarSimulacao(
 
 interface EventosFeed {
   aoReceberMensagem: (mensagem: MensagemDebate) => void
+  aoReceberParecer?: (parecer: MensagemParecer) => void
   aoIniciarAnalise?: () => void
   aoIniciarPesquisa?: () => void
   aoReceberPesquisa?: (pesquisa: PesquisaMercado) => void
@@ -76,6 +85,15 @@ export function conectarFeed(id: string, eventos: EventosFeed): EventSource {
     } catch {
       eventos.aoFalhar('A API enviou uma resposta que não pôde ser lida.')
       fonte.close()
+    }
+  })
+
+  // Parecer de um especialista (chega junto com as opiniões dos consumidores)
+  fonte.addEventListener('parecer', (evento) => {
+    try {
+      eventos.aoReceberParecer?.(JSON.parse((evento as MessageEvent<string>).data) as MensagemParecer)
+    } catch {
+      // um parecer ilegível não interrompe a avaliação
     }
   })
 

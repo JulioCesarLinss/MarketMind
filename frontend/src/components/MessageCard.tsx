@@ -9,7 +9,7 @@ interface MessageCardProps {
   mudouDePosicao?: boolean
 }
 
-export default function MessageCard({ mensagem, indice, mudouDePosicao: mudou }: MessageCardProps) {
+export default function MessageCard({ mensagem, indice }: MessageCardProps) {
   const decisao = mensagem.opiniao.compraria
 
   return (
@@ -19,7 +19,7 @@ export default function MessageCard({ mensagem, indice, mudouDePosicao: mudou }:
         <div className="message-heading">
           <div>
             <strong>{mensagem.persona_nome}</strong>
-            <span>Rodada {mensagem.rodada === 1 ? '01 · avaliação individual' : '02 · reação ao debate'}</span>
+            <span>Consumidor · avaliação individual</span>
           </div>
           <span className={`decision-pill decision-${decisao}`}>
             {decisao === 'sim' ? 'Compraria' : decisao === 'nao' ? 'Não compraria' : 'Talvez'}
@@ -31,7 +31,6 @@ export default function MessageCard({ mensagem, indice, mudouDePosicao: mudou }:
           {mensagem.opiniao.preco_maximo !== null && (
             <span>Pagaria até <strong>{mensagem.opiniao.preco_maximo.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</strong></span>
           )}
-          {mensagem.rodada === 2 && mudou && <span className="changed-opinion">Mudou de posição</span>}
         </div>
         {(mensagem.opiniao.pontos_positivos.length > 0 || mensagem.opiniao.objecoes.length > 0) && (
           <div className="message-tags">

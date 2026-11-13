@@ -38,13 +38,41 @@ def test_indicadores_calculados_pelo_codigo():
     assert [p.mudou for p in ind.por_persona] == [True, False]
 
 
-def test_pedido_tem_debate_e_numeros():
-    r = resultado_exemplo()
+def resultado_sem_debate():
+    from app.models.schemas import MensagemParecer, ParecerEspecialista
+    parecer = ParecerEspecialista(resumo="Preço coerente.", nota=8, veredito="favoravel", pontos_fortes=["margem boa"],
+                                  riscos=["pouca divulgação"], recomendacoes=["combo"], avaliacao_preco="adequado",
+                                  preco_sugerido=85)
+    return ResultadoSimulacao(
+        mensagens=[_msg("economico", "Consumidor Econômico", 1, 3, "nao", 50, ["caro"]),
+                   _msg("exigente", "Consumidor Exigente", 1, 7, "sim", 90)],
+        pareceres=[MensagemParecer(especialista_id="precificacao", especialista_nome="Especialista em Precificação e Finanças",
+                                   area="preço", parecer=parecer, origem="t", duracao_segundos=0)],
+        rodadas=1, provedor_principal="teste", tokens_usados=0, duracao_segundos=0,
+    )
+
+
+def test_pedido_tem_opinioes_pareceres_e_numeros():
+    r = resultado_sem_debate()
     pedido = montar_pedido(NEGOCIOS["barbearia"], r, calcular_indicadores(r, 85.0))
-    assert "Barbearia premium" in pedido
-    assert "Consumidor Econômico — rodada 2" in pedido
+    assert "Barbearia premium" in pedido and "rodada" not in pedido.lower()
     assert "Objeções: caro" in pedido and "Sugestão ao dono: desconto de entrada" in pedido
-    assert "Interesse médio: 4.5 na rodada 1 → 5.5 na rodada 2" in pedido
+    assert "Especialista em Precificação e Finanças" in pedido and "nota 8/10, favorável" in pedido
+    assert "Nota média dos especialistas: 8" in pedido
+    assert "Interesse médio dos consumidores: 5" in pedido
+
+
+def test_indicadores_sem_debate_usam_a_unica_opiniao():
+    ind = calcular_indicadores(resultado_sem_debate(), 85.0)
+    assert ind.interesse_medio_r2 == 5 and ind.decisoes_r2 == {"sim": 1, "talvez": 0, "nao": 1}
+    assert ind.mudaram_de_posicao == 0
+    assert ind.nota_media_especialistas == 8 and ind.vereditos_especialistas["favoravel"] == 1
+
+
+def test_analista_filtra_opinioes_extrapoladas():
+    from app.agents.analista import SISTEMA_ANALISTA
+    assert "opinioes_descartadas" in SISTEMA_ANALISTA and "contradiz os fatos calculados" in SISTEMA_ANALISTA
+    assert "Ninguém conversou com ninguém" in SISTEMA_ANALISTA
 
 
 def test_relatorio_com_mock():
@@ -108,4 +136,39 @@ def test_espaco_para_subir_e_preco_acima_do_aceito():
 def test_analista_nao_tem_amostra_gratis_como_padrao():
     from app.agents.analista import SISTEMA_ANALISTA
     assert "Amostra grátis, degustação e brinde NÃO são o padrão" in SISTEMA_ANALISTA
-    assert "marmita" in SISTEMA_ANALISTA and "NÃO recomende baixar o preço" in SISTEMA_ANALISTA
+    assert "NÃO diga que é caro nem recomende baixar" in SISTEMA_ANALISTA
+
+
+# ---------- Filtro de opiniões extrapoladas (pelo código) ----------
+
+def _consumidor(objecoes, fala="Gostei da proposta. Preciso ver provas de que a carne é fresca.", mudaria="mostrar fotos do pão"):
+    return MensagemDebate(persona_id="exigente", persona_nome="Consumidor Exigente", rodada=1, origem="t", duracao_segundos=0,
+                          opiniao=Opiniao(fala=fala, interesse=5, compraria="talvez", objecoes=objecoes, o_que_mudaria=mudaria))
+
+
+def test_filtro_tira_pedidos_de_prova_e_preco_caro_contraditorio():
+    from app.agents.analista import filtrar_extrapoladas
+    r = ResultadoSimulacao(mensagens=[_consumidor(["Achei caro", "Não sei o prazo de entrega", "Sem certificado"])],
+                           rodadas=1, provedor_principal="t", tokens_usados=0, duracao_segundos=0)
+    negocio = {"preco": 18, "concorrentes": [{"nome": "A", "preco": 45}]}   # 60% abaixo
+    limpo, descartadas = filtrar_extrapoladas(r, negocio)
+    o = limpo.mensagens[0].opiniao
+    assert o.objecoes == ["Não sei o prazo de entrega"]          # a objeção legítima fica
+    assert o.fala == "Gostei da proposta." and o.o_que_mudaria == ""
+    assert len(descartadas) == 4 and any("caro" in d and "abaixo da média" in d for d in descartadas)
+    assert r.mensagens[0].opiniao.objecoes[0] == "Achei caro"    # o original (feed) não muda
+
+
+def test_caro_nao_e_filtrado_quando_o_preco_e_alto():
+    from app.agents.analista import filtrar_extrapoladas
+    r = ResultadoSimulacao(mensagens=[_consumidor(["Achei caro"], fala="Achei caro.", mudaria="")],
+                           rodadas=1, provedor_principal="t", tokens_usados=0, duracao_segundos=0)
+    limpo, descartadas = filtrar_extrapoladas(r, {"preco": 60, "concorrentes": [{"nome": "A", "preco": 45}]})
+    assert limpo.mensagens[0].opiniao.objecoes == ["Achei caro"] and descartadas == []
+
+
+def test_relatorio_lista_o_que_o_codigo_descartou():
+    r = ResultadoSimulacao(mensagens=[_consumidor(["Sem certificado"])],
+                           rodadas=1, provedor_principal="t", tokens_usados=0, duracao_segundos=0)
+    rel = asyncio.run(analisar(MockProvider(atraso_segundos=0), {"preco": 18}, r))
+    assert any("certificação" in d for d in rel.analise.opinioes_descartadas)

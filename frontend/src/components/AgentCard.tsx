@@ -6,21 +6,18 @@ import type { MensagemDebate, PersonaPublica } from '../types'
 interface AgentCardProps {
   persona: PersonaPublica
   mensagens: MensagemDebate[]
-  rodadaAtual: 1 | 2
+  rodadaAtual?: 1 | 2 // não é mais usado (não há debate); mantido para compatibilidade
   finalizado: boolean
 }
 
-export default function AgentCard({ persona, mensagens, rodadaAtual, finalizado }: AgentCardProps) {
+export default function AgentCard({ persona, mensagens, finalizado }: AgentCardProps) {
   const ultimaMensagem = mensagens[mensagens.length - 1]
-  const respondeuPrimeira = mensagens.some((mensagem) => mensagem.rodada === 1)
-  const respondeuSegunda = mensagens.some((mensagem) => mensagem.rodada === 2)
-  const pensando = !finalizado && !respondeuSegunda
+  const respondeu = mensagens.length > 0
+  const pensando = !finalizado && !respondeu
 
   let status = 'Analisando oferta'
   if (finalizado) status = 'Avaliação concluída'
-  else if (respondeuSegunda) status = 'Participando do debate'
-  else if (rodadaAtual === 2 && respondeuPrimeira) status = 'Aguardando resposta'
-  else if (respondeuPrimeira) status = 'Primeira opinião enviada'
+  else if (respondeu) status = 'Opinião enviada'
 
   return (
     <article className={`agent-card ${pensando ? 'agent-thinking' : 'agent-answered'}`}>
