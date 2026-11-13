@@ -73,3 +73,39 @@ def test_falha_do_analista_mantem_os_numeros():
 def test_analista_nao_configurado():
     rel = asyncio.run(analisar(None, NEGOCIOS["barbearia"], resultado_exemplo()))
     assert rel.analise is None and "LLM_MODEL_ANALISTA" in rel.erro_analise
+
+
+
+# ---------- Avaliação do preço ----------
+
+def _ind(pm, compraria="talvez"):
+    from app.models.schemas import IndicadorPersona
+    return IndicadorPersona(persona_id="x", persona_nome="x", interesse_r1=5, interesse_r2=5, compraria_r1=compraria,
+                            compraria_r2=compraria, mudou=False, preco_maximo=pm)
+
+
+def test_maioria_aceita_vira_preco_ideal():
+    from app.agents.analista import avaliar_preco
+    # caso do usuário: todos elogiaram, máximos 118, 119, 120... para um preço de 119
+    aceitam, avaliacao, referencia, _ = avaliar_preco([_ind(118), _ind(118.5), _ind(119), _ind(120), _ind(116)], 119)
+    assert aceitam == 5 and avaliacao == "ideal" and referencia == 119
+
+
+def test_quem_compraria_aceita_mesmo_com_maximo_menor():
+    from app.agents.analista import avaliar_preco
+    aceitam, avaliacao, _, _ = avaliar_preco([_ind(100, "sim"), _ind(105, "sim"), _ind(80, "nao")], 119)
+    assert aceitam == 2 and avaliacao == "ideal"
+
+
+def test_espaco_para_subir_e_preco_acima_do_aceito():
+    from app.agents.analista import avaliar_preco
+    assert avaliar_preco([_ind(150), _ind(140), _ind(90)], 119)[1] == "espaco_para_subir"
+    aceitam, avaliacao, referencia, _ = avaliar_preco([_ind(80), _ind(90), _ind(130)], 119)
+    assert aceitam == 1 and avaliacao == "acima_do_aceito" and referencia == 90  # mediana do que pagariam
+    assert avaliar_preco([_ind(None), _ind(None)], 119)[1] == "sem_dados"
+
+
+def test_analista_nao_tem_amostra_gratis_como_padrao():
+    from app.agents.analista import SISTEMA_ANALISTA
+    assert "Amostra grátis, degustação e brinde NÃO são o padrão" in SISTEMA_ANALISTA
+    assert "marmita" in SISTEMA_ANALISTA and "NÃO recomende baixar o preço" in SISTEMA_ANALISTA

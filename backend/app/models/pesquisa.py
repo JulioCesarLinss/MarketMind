@@ -17,7 +17,7 @@ class PlanoPesquisa(BaseModel):
 
     tipo_estabelecimento: str = Field(description="Nome comum do tipo de loja, 1 a 3 palavras (ex.: 'barbearia', 'hamburgueria', 'loja de roupas femininas')")
     produto_comparavel: str = Field(description="O produto/serviço principal em poucas palavras, como as pessoas buscam (ex.: 'corte e barba', 'hambúrguer artesanal')")
-    cidade: str = Field(description="Só o nome da cidade da localização informada (ex.: 'Recife')")
+    cidade: str = Field(description="Só o nome da cidade da localização informada, exatamente como escrito (ex.: 'Recife'), sem bairro nem estado")
     categoria_mapa: Literal[tuple(CATEGORIAS)] = Field(  # type: ignore[valid-type]
         description=("Categoria do mapa mais próxima das lojas concorrentes. Prefira sempre uma categoria próxima a 'outro' "
                      "(ex.: marmitaria, comida caseira ou self-service = restaurante; açaí = sorveteria; "
@@ -104,6 +104,7 @@ class PesquisaMercado(BaseModel):
     duracao_segundos: float = 0
     gerada_em: str = ""
     erro: str | None = Field(default=None, description="Por que a parte de preços falhou (a simulação continua)")
+    observacao: str = Field(default="", description="Ex.: possível negócio único na região (nenhum concorrente encontrado)")
     aviso: str = (
         "Referência automática obtida na internet e no OpenStreetMap: valores aproximados e possivelmente "
         "incompletos. Confira as fontes antes de decidir."
@@ -114,4 +115,5 @@ class PesquisaMercado(BaseModel):
 
     def tem_dados(self) -> bool:
         """Trouxe algo útil (preços ou contagem de lojas)? Senão, nem entra no contexto das personas."""
-        return self.tem_precos() or bool(self.lojas_regiao and self.lojas_regiao.quantidade is not None)
+        return (self.tem_precos() or bool(self.lojas_regiao and self.lojas_regiao.quantidade is not None)
+                or bool(self.observacao))

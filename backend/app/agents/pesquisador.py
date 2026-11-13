@@ -16,6 +16,7 @@ import asyncio
 import logging
 import re
 import time
+import unicodedata
 from datetime import datetime, timezone
 from statistics import mean, pstdev
 
@@ -57,12 +58,31 @@ A partir dos dados do negócio, identifique o tipo de estabelecimento concorrent
 (nada de "premium" ou "barato": as buscas por faixa são montadas depois)."""
 
 
-def montar_consultas(plano: PlanoPesquisa) -> list[str]:
-    """Três buscas no mesmo padrão (geral, popular, premium): previsível e sem repetição."""
+def normalizar(texto: str) -> str:
+    """'São Paulo' / 'sao-paulo' / 'SÃO PAULO' → 'sao paulo' (para comparar nomes de cidade e bairro)."""
+    sem_acento = unicodedata.normalize("NFKD", texto or "").encode("ascii", "ignore").decode()
+    return " ".join(re.sub(r"[^a-z0-9]+", " ", sem_acento.lower()).split())
+
+
+def extrair_bairro(localizacao: str, cidade: str) -> str:
+    """'Boa Viagem, Recife - PE' → 'Boa Viagem'. Vazio se o usuário informou só a cidade."""
+    primeiro = (localizacao or "").split(",")[0].split(" - ")[0].strip()
+    return "" if not primeiro or normalizar(primeiro) == normalizar(cidade) else primeiro
+
+
+def menciona(texto_normalizado: str, nome: str) -> bool:
+    alvo = normalizar(nome)
+    return bool(alvo) and f" {alvo} " in f" {texto_normalizado} "
+
+
+def montar_consultas(plano: PlanoPesquisa, bairro: str = "") -> list[str]:
+    """Três buscas no mesmo padrão (geral, popular, premium): previsível e sem repetição.
+    A primeira inclui o bairro, para achar primeiro os negócios mais próximos."""
     base = " ".join(dict.fromkeys(f"{plano.tipo_estabelecimento} {plano.cidade}".split()))  # evita palavra repetida
     produto = plano.produto_comparavel.strip()
+    perto = " ".join(dict.fromkeys(f"{plano.tipo_estabelecimento} {bairro} {plano.cidade}".split())) if bairro else base
     return [
-        f"{base} preço {produto}",
+        f"{perto} preço {produto}",
         f"{base} barato popular preço {produto}",
         f"{base} premium preço {produto}",
     ]
@@ -78,9 +98,9 @@ def montar_consultas_extras(plano: PlanoPesquisa, rodada: int = 2, localizacao: 
             f"quanto custa {produto} em {cidade}",
             f"melhores {tipo} {cidade} {produto} valor",
         ]
-    bairro = localizacao.split(",")[0].strip() or cidade  # "Boa Viagem, Recife - PE" → "Boa Viagem"
+    bairro = extrair_bairro(localizacao, cidade)
     return [
-        f"{tipo} {bairro} {cidade} preços",
+        f"{tipo} {bairro} {cidade} preços" if bairro else f"{tipo} perto de mim {cidade} preços",
         f"{produto} {cidade} promoção preço",
         f"cardápio ou lista de serviços {tipo} {cidade} valores",
     ]
@@ -91,7 +111,8 @@ Regras:
 - Liste TODOS os estabelecimentos diferentes que aparecerem (até 3 preços por estabelecimento): queremos exemplos baratos, médios e caros.
 - Use somente preços escritos nos trechos. Nunca invente, arredonde ou calcule preços.
 - Classifique cada estabelecimento em uma faixa (popular, intermediaria, premium) pelo posicionamento e pelo preço.
-- Ignore taxas, fretes, descontos isolados e itens de outro tipo."""
+- Ignore taxas, fretes, descontos isolados e itens de outro tipo.
+- Considere SOMENTE estabelecimentos da cidade informada. Ignore os de outras cidades, mesmo que apareçam na mesma página."""
 
 
 def _numero(texto: str) -> float | None:
@@ -107,6 +128,19 @@ def _numero(texto: str) -> float | None:
 
 def precos_no_texto(texto: str) -> list[float]:
     return [v for v in (_numero(m) for m in PRECO_RE.findall(texto)) if v is not None]
+
+
+def filtrar_por_cidade(resultados: list[ResultadoBusca], cidade: str, bairro: str = "") -> list[ResultadoBusca]:
+    """Fica só com páginas que citam a cidade do usuário (no título, no endereço ou no texto)
+    e coloca primeiro as que citam o bairro: os trechos têm limite, então os mais próximos entram antes."""
+    if not cidade:
+        return resultados
+    da_cidade = []
+    for r in resultados:
+        texto = normalizar(f"{r.titulo} {r.url} {r.conteudo}")
+        if menciona(texto, cidade):
+            da_cidade.append((not (bairro and menciona(texto, bairro)), r))
+    return [r for _, r in sorted(da_cidade, key=lambda par: par[0])]
 
 
 def recortar_trechos(resultados: list[ResultadoBusca], preco_usuario: float, ignorar_urls: set[str] | None = None) -> list[dict]:
@@ -184,6 +218,27 @@ def reclassificar_por_preco(exemplos: list[ExemploMercado]) -> list[ExemploMerca
 def precisa_mais_precos(exemplos: list[ExemploMercado]) -> bool:
     lojas = {e.estabelecimento.lower() for e in exemplos}
     return len(exemplos) < 3 * META_POR_FAIXA or len(lojas) < META_LOJAS
+
+
+def observar_regiao(pesquisa: PesquisaMercado, cidade: str, bairro: str, busca_funcionou: bool) -> str:
+    """Observação em texto quando faltam concorrentes (ex.: possível negócio único na região).
+    Só afirma algo quando a busca e o mapa funcionaram: falha técnica não é ausência de concorrente."""
+    perto = f"perto de {bairro}" if bairro else f"em {cidade}"
+    lojas = pesquisa.lojas_regiao.quantidade if pesquisa.lojas_regiao else None
+    tem_precos = pesquisa.total_precos > 0
+    if not tem_precos and busca_funcionou and lojas == 0:
+        return (f"Não encontramos negócios parecidos em {cidade}: nenhum preço na internet e nenhuma loja do ramo "
+                f"mapeada {perto}. Pode ser um negócio único na região (ou ainda pouco presente na internet e no mapa).")
+    if not tem_precos and busca_funcionou and lojas is None:
+        return (f"Nenhum negócio parecido com preço publicado foi encontrado na internet em {cidade}. "
+                "Pode ser um negócio único na região (ou que divulga pouco os preços).")
+    if not tem_precos and busca_funcionou and lojas:
+        return (f"Há lojas do ramo {perto}, mas nenhuma com preço publicado na internet em {cidade}: "
+                "a comparação de preço fica por conta dos concorrentes que você informar.")
+    if tem_precos and lojas == 0:
+        return (f"Nenhuma loja do ramo mapeada {perto}: na vizinhança pode ser um negócio único. "
+                f"Os preços acima são de outras partes de {cidade}.")
+    return ""
 
 
 def calcular_faixas(exemplos: list[ExemploMercado]) -> list[FaixaMercado]:
@@ -271,7 +326,8 @@ class Pesquisador:
             log.exception("Pesquisador: planejamento falhou")
             pesquisa.erro = f"Não foi possível planejar a pesquisa ({type(erro).__name__})."
             return pesquisa
-        pesquisa.consultas = montar_consultas(plano)
+        bairro = extrair_bairro(str(negocio.get("localizacao", "")), plano.cidade)
+        pesquisa.consultas = montar_consultas(plano, bairro)
 
         # 2. Buscar preços e contar lojas ao mesmo tempo
         tarefa_mapa = (
@@ -285,14 +341,15 @@ class Pesquisador:
             pesquisa.erro = "Busca na internet não configurada (defina TAVILY_API_KEY)."
         elif preco > 0:
             # 1ª rodada: geral, popular e premium
-            exemplos, trechos_usados = await self._rodada_busca(negocio, pesquisa, pesquisa.consultas, preco, [], set())
+            exemplos, trechos_usados = await self._rodada_busca(negocio, plano, bairro, pesquisa, pesquisa.consultas,
+                                                                preco, [], set())
             # Rodadas 2 e 3: só se ainda faltar preço (meta: 4 por faixa e 5 estabelecimentos diferentes)
             for rodada in range(2, MAX_RODADAS + 1):
                 if not precisa_mais_precos(exemplos) or (pesquisa.erro or "").startswith("Busca na internet indisponível"):
                     break
                 extras = montar_consultas_extras(plano, rodada, str(negocio.get("localizacao", "")))
                 pesquisa.consultas += extras
-                novos, trechos_novos = await self._rodada_busca(negocio, pesquisa, extras, preco, exemplos,
+                novos, trechos_novos = await self._rodada_busca(negocio, plano, bairro, pesquisa, extras, preco, exemplos,
                                                                  {t["url"] for t in trechos_usados})
                 exemplos += novos
                 trechos_usados += trechos_novos
@@ -318,10 +375,14 @@ class Pesquisador:
                     "Contagem parcial: o serviço principal do mapa estava indisponível e a busca por nome encontra "
                     "bem menos lojas que o real. Não use este número para medir a concorrência."
                 )
+        busca_funcionou = bool(self.busca) and preco > 0 and not (pesquisa.erro or "").startswith(
+            ("Busca na internet indisponível", "Busca na internet falhou", "Não foi possível"))
+        pesquisa.observacao = observar_regiao(pesquisa, plano.cidade, bairro, busca_funcionou)
         return pesquisa
 
-    async def _rodada_busca(self, negocio: dict, pesquisa: PesquisaMercado, consultas: list[str], preco: float,
-                            anteriores: list[ExemploMercado], urls_vistas: set[str]) -> tuple[list[ExemploMercado], list[dict]]:
+    async def _rodada_busca(self, negocio: dict, plano: PlanoPesquisa, bairro: str, pesquisa: PesquisaMercado,
+                            consultas: list[str], preco: float, anteriores: list[ExemploMercado],
+                            urls_vistas: set[str]) -> tuple[list[ExemploMercado], list[dict]]:
         """Busca as consultas em paralelo, recorta os trechos com preço e extrai/valida os exemplos."""
         resultados: list[ResultadoBusca] = []
         respostas = await asyncio.gather(*(self.busca.buscar(c, RESULTADOS_POR_BUSCA) for c in consultas),
@@ -333,19 +394,23 @@ class Pesquisador:
                 pesquisa.erro = f"Busca na internet indisponível: {r}"
             elif isinstance(r, Exception):
                 pesquisa.erro = f"Busca na internet falhou ({type(r).__name__})."
-        trechos = recortar_trechos(resultados, preco, urls_vistas) if resultados else []
+        da_cidade = filtrar_por_cidade(resultados, plano.cidade, bairro)
+        trechos = recortar_trechos(da_cidade, preco, urls_vistas) if da_cidade else []
         if not trechos:
-            if resultados:
+            if resultados and not da_cidade:
+                pesquisa.erro = pesquisa.erro or f"As páginas encontradas eram de outras cidades, não de {plano.cidade}."
+            elif resultados:
                 pesquisa.erro = pesquisa.erro or "As páginas encontradas não traziam preços comparáveis."
             return [], []
-        return await self._extrair(negocio, trechos, pesquisa, preco, anteriores), trechos
+        return await self._extrair(negocio, plano.cidade, trechos, pesquisa, preco, anteriores), trechos
 
-    async def _extrair(self, negocio: dict, trechos: list[dict], pesquisa: PesquisaMercado, preco: float,
+    async def _extrair(self, negocio: dict, cidade: str, trechos: list[dict], pesquisa: PesquisaMercado, preco: float,
                        anteriores: list[ExemploMercado] | None = None) -> list[ExemploMercado]:
         texto_trechos = "\n".join(f"[{t['id']}] ({t['titulo'][:60]}) {t['texto']}" for t in trechos)
         pedido = (
             f"Oferta a comparar: {negocio.get('produto')} ({negocio.get('tipo')}), {negocio.get('localizacao')}, "
-            f"preço R$ {preco:.2f}.\n\nTrechos de páginas da internet:\n{texto_trechos}"
+            f"preço R$ {preco:.2f}.\nCidade: {cidade} — liste só estabelecimentos desta cidade."
+            f"\n\nTrechos de páginas da internet:\n{texto_trechos}"
         )
         try:
             extracao = await self.ia_extracao.gerar(SISTEMA_EXTRACAO, [{"role": "user", "content": pedido}], ExtracaoMercado)

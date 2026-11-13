@@ -44,6 +44,10 @@ export default function ResultPage({ personas, resultado, onNovaAvaliacao }: Res
   const totalAgentes = Math.max(decisoes.sim + decisoes.talvez + decisoes.nao, 1)
   const larguraDecisao = (n: number) => `${(n / totalAgentes) * 100}%`
   const precoMaximo = indicadores?.preco_maximo_medio ?? null
+  // Veredito do preço calculado pelo backend: se a maioria pagaria o preço cobrado, ele é o "preço ideal"
+  const avaliacaoPreco = indicadores?.avaliacao_preco ?? (precoMaximo !== null ? 'antigo' : 'sem_dados')
+  const precoReferencia = indicadores?.preco_referencia ?? precoMaximo
+  const totalPersonas = indicadores?.por_persona.length ?? 0
 
   // Numeração das seções: só conta as que existem nesta simulação
   const pesquisa = resultado.pesquisa ?? null
@@ -96,15 +100,35 @@ export default function ResultPage({ personas, resultado, onNovaAvaliacao }: Res
               </p>
               <div className="interest-meter"><span style={{ width: `${interesseFinal * 10}%` }} /></div>
             </article>
-            {indicadores && precoMaximo !== null ? (
-              <article className={`summary-card ${precoMaximo < indicadores.preco_ofertado ? 'price-below' : 'price-ok'}`}>
-                <span>PREÇO QUE PAGARIAM</span>
-                <strong>{formatarReais(precoMaximo)}</strong>
-                <p>Média do máximo aceito · você cobra {formatarReais(indicadores.preco_ofertado)}</p>
-                <div className="price-meter" aria-hidden="true">
-                  <span style={{ width: `${Math.min(100, (precoMaximo / indicadores.preco_ofertado) * 100)}%` }} />
-                </div>
-              </article>
+            {indicadores && precoReferencia !== null && avaliacaoPreco !== 'sem_dados' ? (
+              avaliacaoPreco === 'ideal' || avaliacaoPreco === 'espaco_para_subir' ? (
+                <article className="summary-card price-ok">
+                  <span>PREÇO IDEAL</span>
+                  <strong>{formatarReais(indicadores.preco_ofertado)}</strong>
+                  <p>
+                    {indicadores.aceitam_preco} de {totalPersonas} pagariam o seu preço
+                    {avaliacaoPreco === 'espaco_para_subir' && indicadores.preco_maximo_mediano
+                      ? ` · aceitariam até ${formatarReais(indicadores.preco_maximo_mediano)}: há espaço para subir`
+                      : ''}
+                  </p>
+                  <div className="price-meter" aria-hidden="true">
+                    <span style={{ width: `${(Number(indicadores.aceitam_preco) / Math.max(totalPersonas, 1)) * 100}%` }} />
+                  </div>
+                </article>
+              ) : (
+                <article className={`summary-card ${precoReferencia < indicadores.preco_ofertado ? 'price-below' : 'price-ok'}`}>
+                  <span>PREÇO QUE PAGARIAM</span>
+                  <strong>{formatarReais(precoReferencia)}</strong>
+                  <p>
+                    {avaliacaoPreco === 'acima_do_aceito'
+                      ? `Só ${indicadores.aceitam_preco} de ${totalPersonas} pagariam ${formatarReais(indicadores.preco_ofertado)}`
+                      : `Média do máximo aceito · você cobra ${formatarReais(indicadores.preco_ofertado)}`}
+                  </p>
+                  <div className="price-meter" aria-hidden="true">
+                    <span style={{ width: `${Math.min(100, (precoReferencia / indicadores.preco_ofertado) * 100)}%` }} />
+                  </div>
+                </article>
+              )
             ) : (
               <article className="summary-card">
                 <span>OPINIÕES RECEBIDAS</span>

@@ -58,7 +58,8 @@ class AnaliseDebate(BaseModel):
         description="3 a 5 ajustes concretos e viáveis para o dono, ligados às objeções, do mais importante ao menos"
     )
     experimentos: list[str] = Field(
-        description="2 a 3 testes baratos e rápidos com clientes reais, dizendo o que fazer e o que medir"
+        description=("2 a 3 testes baratos e rápidos com clientes reais, adequados ao ramo, dizendo o que fazer e o que medir. "
+                     "No máximo um envolvendo algo gratuito (amostra, degustação, brinde)")
     )
 
 
@@ -81,6 +82,16 @@ class Indicadores(BaseModel):
     interesse_medio_r2: float
     decisoes_r2: dict[str, int] = Field(description='Quantas personas disseram "sim", "talvez" e "nao" na rodada 2')
     preco_maximo_medio: float | None = Field(description="Média do preço máximo que as personas pagariam (rodada 2)")
+    preco_maximo_mediano: float | None = Field(default=None, description="Mediana do preço máximo (menos sensível a um valor extremo)")
+    aceitam_preco: int = Field(default=0, description="Quantas personas pagariam o preço cobrado (rodada 2)")
+    avaliacao_preco: Literal["ideal", "espaco_para_subir", "acima_do_aceito", "sem_dados"] = Field(
+        default="sem_dados",
+        description=("ideal = a maioria pagaria o preço cobrado; espaco_para_subir = a maioria pagaria e a mediana "
+                     "do máximo é 10%+ acima; acima_do_aceito = a maioria NÃO pagaria o preço cobrado"),
+    )
+    preco_referencia: float | None = Field(
+        default=None, description="Preço a destacar: o próprio preço cobrado se a maioria aceita; senão, a mediana do que pagariam"
+    )
     mudaram_de_posicao: int
     por_persona: list[IndicadorPersona]
 
