@@ -84,7 +84,7 @@ export default function ResultPage({ personas, resultado, onNovaAvaliacao }: Res
             <h1>Sua ideia foi<br /><span>vista por outros ângulos.</span></h1>
             <p>Veja o que chamou atenção, quais dúvidas apareceram e onde vale aprofundar a validação.</p>
           </div>
-          <div className="result-stamp"><span>MM</span><strong>DEBATE<br />FINALIZADO</strong><i>✳</i></div>
+          <div className="result-stamp"><span><img src="/favicon2.svg" alt="Favicon"/></span><strong>DEBATE<br />FINALIZADO</strong><i>✳</i></div>
         </section>
 
         <section className="summary-section">
@@ -221,7 +221,7 @@ export default function ResultPage({ personas, resultado, onNovaAvaliacao }: Res
           <span>i</span>
           <p><strong>Importante:</strong> {relatorio?.aviso || 'os resultados representam percepções de consumidores sintéticos, não uma amostra estatística nem uma previsão de vendas. Use os pontos levantados como hipóteses para testar com clientes reais.'}</p>
         </div>
-        <button className="evaluate-button new-evaluation-button" onClick={onNovaAvaliacao}>Avaliar outra ideia <span>↗</span></button>
+        <button className="evaluate-button new-evaluation-button" onClick={onNovaAvaliacao}>Avaliar outra ideia</button>
       </main>
     </div>
   )

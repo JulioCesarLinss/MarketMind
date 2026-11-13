@@ -1689,4 +1689,15 @@ a { color: inherit; text-decoration: none; }
 @media (max-width: 680px) {
   .fin-grafico-foco { margin-left: 0; width: 100%; }
   .fin-grafico-eixo span:nth-child(even) { visibility: hidden; }
+.result-stamp > span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.result-stamp > span img {
+  display: block;
+  width: 75px;
+  height: 75px;
+  object-fit: contain;
 }

@@ -1,5 +1,6 @@
+
 import { useState, type FormEvent } from 'react'
-import { iconePersona } from '../personaIcones'
+import { imagemPersona } from '../personaIcones'
 import {
   MIN_AGENTES,
   MODELOS_ENTREGA,
@@ -129,7 +130,11 @@ export default function HomePage({ personas, carregando, erro, aoAvaliar }: Home
             </p>
             <div className="hero-proof">
               <div className="avatar-stack" aria-hidden="true">
-                <span>₱</span><span>✦</span><span>◷</span><span>⌕</span><span>⌖</span>
+                <span><img src={imagemPersona('fiel_regiao')} alt="Fiel" /></span>
+                <span><img src={imagemPersona('critico')} alt="Crítico" /></span>
+                <span><img src={imagemPersona('ocupado')} alt="Ocupado" /></span>
+                <span><img src={imagemPersona('exigente')} alt="Exigente" /></span>
+                <span><img src={imagemPersona('economico')} alt="Economico" /></span>
               </div>
               <span><strong>5 agentes independentes</strong><br />2 rodadas de avaliação e debate</span>
             </div>
@@ -139,13 +144,23 @@ export default function HomePage({ personas, carregando, erro, aoAvaliar }: Home
             <div className="orbit orbit-two" />
 
             {/* Camada externa: 3 agentes */}
-            <div className="orbit-node node-one agent-orbit-motion outer-agent-one">₱</div>
-            <div className="orbit-node node-two agent-orbit-motion outer-agent-two">✦</div>
-            <div className="orbit-node node-five agent-orbit-motion outer-agent-three">⌖</div>
+            <div className="orbit-node node-one agent-orbit-motion outer-agent-one">
+              <img src={imagemPersona('fiel_regiao')} alt="Fiel" />
+            </div>
+            <div className="orbit-node node-two agent-orbit-motion outer-agent-two">
+              <img src={imagemPersona('critico')} alt="Crítico" />
+            </div>
+            <div className="orbit-node node-five agent-orbit-motion outer-agent-three">
+              <img src={imagemPersona('exigente')} alt="Exigente" />
+            </div>
 
             {/* Camada interna: 2 agentes */}
-            <div className="orbit-node node-three agent-orbit-motion inner-agent-one">◷</div>
-            <div className="orbit-node node-four agent-orbit-motion inner-agent-two">⌕</div>
+            <div className="orbit-node node-three agent-orbit-motion inner-agent-one">
+              <img src={imagemPersona('ocupado')} alt="Ocupado" />
+            </div>
+            <div className="orbit-node node-four agent-orbit-motion inner-agent-two">
+              <img src={imagemPersona('economico')} alt="Economico" />
+            </div>
 
             {/* Núcleo do MarketMind */}
             <div className="landing-nucleus">
@@ -286,7 +301,7 @@ export default function HomePage({ personas, carregando, erro, aoAvaliar }: Home
                       title={travada ? `Mantenha pelo menos ${MIN_AGENTES} consumidores` : persona.prioridades}
                       onClick={() => alternarPersona(persona.id)}
                     >
-                      <span className={`persona-option-icon avatar-${persona.id}`}>{iconePersona(persona.id)}</span>
+                      <span className={`persona-option-icon avatar-${persona.id}`}><img src={imagemPersona(persona.id)} alt="" /></span>
                       <span className="persona-option-name">{persona.nome.replace(/^Consumidor /, '')}</span>
                       <span className="persona-option-check" aria-hidden="true">{marcada ? '✓' : ''}</span>
                     </button>
@@ -363,7 +378,7 @@ export default function HomePage({ personas, carregando, erro, aoAvaliar }: Home
                 <span><strong>Modo demonstração</strong><small>Respostas de exemplo, sem chamadas de IA.</small></span>
               </label>
               <button className="evaluate-button" type="submit" disabled={carregando}>
-                {carregando ? <><span className="button-spinner" /> Iniciando...</> : <>Avaliar produto <span>↗</span></>}
+                {carregando ? <><span className="button-spinner" /> Iniciando...</> : <>Avaliar produto</>}
               </button>
             </div>
             {erro && <div className="form-error" role="alert">{erro}</div>}
