@@ -46,6 +46,27 @@ def formatar_pesquisa(pesquisa: "PesquisaMercado") -> str:
     return "\n".join(linhas)
 
 
+def formatar_entrega(entrega: dict | None) -> str:
+    """Linha sobre entrega. Sem a informação, as personas não devem supor nada."""
+    from app.models.negocio import MODELOS_ENTREGA
+
+    if not entrega:
+        return "- Entrega: não informada"
+    if not entrega.get("disponivel"):
+        return "- Entrega: não faz entrega (atendimento presencial ou retirada no local)"
+    partes = [f"faz entrega por {MODELOS_ENTREGA.get(entrega.get('modelo') or 'outro', 'modelo não informado')}"]
+    taxa = entrega.get("taxa")
+    if taxa is not None:
+        partes.append("entrega grátis" if taxa == 0 else f"taxa de entrega R$ {taxa:.2f}")
+    if entrega.get("prazo"):
+        partes.append(f"prazo: {entrega['prazo']}")
+    if entrega.get("area"):
+        partes.append(f"área atendida: {entrega['area']}")
+    if entrega.get("garantias"):
+        partes.append(f"como garante a entrega: {entrega['garantias']}")
+    return "- Entrega: " + "; ".join(partes)
+
+
 def formatar_negocio(negocio: dict, pesquisa: "PesquisaMercado | None" = None) -> str:
     linhas = [
         "## Oferta a avaliar (dados informados pelo empreendedor)",
@@ -55,6 +76,7 @@ def formatar_negocio(negocio: dict, pesquisa: "PesquisaMercado | None" = None) -
         f"- Preço: R$ {negocio.get('preco', 0):.2f}",
         f"- Público pretendido: {negocio.get('publico', '-')}",
         f"- Divulgação e canais: {negocio.get('divulgacao', '-')}",
+        formatar_entrega(negocio.get("entrega")),
     ]
     concorrentes = negocio.get("concorrentes") or []
     if concorrentes:

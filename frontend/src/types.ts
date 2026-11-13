@@ -151,7 +151,12 @@ export interface Relatorio {
 export interface SimulacaoCriada {
   id: string
   status: string
+  personas: string[] // ids das personas que participam
 }
+
+export const MIN_AGENTES = 2
+export const MAX_AGENTES = 8
+export const PADRAO_AGENTES = 5
 
 export interface ConcorrentePayload {
   nome: string
@@ -171,7 +176,27 @@ export interface NegocioPayload {
     custo_variavel_unitario: number
     taxa_plataforma_pct: number
   } | null
+  entrega: EntregaPayload | null
   concorrentes: ConcorrentePayload[]
+}
+
+export type ModeloEntrega = 'proprio' | 'app_delivery' | 'entregador_parceiro' | 'correios' | 'outro'
+
+export const MODELOS_ENTREGA: Record<ModeloEntrega, string> = {
+  proprio: 'Entregador próprio',
+  app_delivery: 'App de delivery (iFood, 99Food...)',
+  entregador_parceiro: 'Motoboy terceirizado / app de entregas (Lalamove, Uber Flash, Loggi...)',
+  correios: 'Correios ou transportadora',
+  outro: 'Outro',
+}
+
+export interface EntregaPayload {
+  disponivel: boolean
+  modelo: ModeloEntrega | null
+  taxa: number | null
+  prazo: string
+  area: string
+  garantias: string
 }
 
 

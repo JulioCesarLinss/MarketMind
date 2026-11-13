@@ -41,6 +41,8 @@ export default function ResultPage({ personas, resultado, onNovaAvaliacao }: Res
   const analise = relatorio?.analise ?? null
   const interesseFinal = indicadores ? indicadores.interesse_medio_r2 : mediaInteresse
   const decisoes = indicadores ? indicadores.decisoes_r2 : contagem
+  const totalAgentes = Math.max(decisoes.sim + decisoes.talvez + decisoes.nao, 1)
+  const larguraDecisao = (n: number) => `${(n / totalAgentes) * 100}%`
   const precoMaximo = indicadores?.preco_maximo_medio ?? null
 
   // Numeração das seções: só conta as que existem nesta simulação
@@ -106,8 +108,8 @@ export default function ResultPage({ personas, resultado, onNovaAvaliacao }: Res
             ) : (
               <article className="summary-card">
                 <span>OPINIÕES RECEBIDAS</span>
-                <strong>{resultado.mensagens.length}<small> / 10</small></strong>
-                <p>5 consumidores em 2 rodadas</p>
+                <strong>{resultado.mensagens.length}<small> / {personas.length * 2}</small></strong>
+                <p>{personas.length} consumidores em 2 rodadas</p>
               </article>
             )}
             <article className="summary-card">
@@ -133,9 +135,9 @@ export default function ResultPage({ personas, resultado, onNovaAvaliacao }: Res
             <div className="decision-stat decision-maybe"><span className="decision-dot" /><strong>{decisoes.talvez}</strong><span>Talvez</span></div>
             <div className="decision-stat decision-no"><span className="decision-dot" /><strong>{decisoes.nao}</strong><span>Não comprariam</span></div>
             <div className="decision-bar" aria-label={`${decisoes.sim} comprariam, ${decisoes.talvez} talvez, ${decisoes.nao} não comprariam`}>
-              <span className="bar-yes" style={{ width: `${decisoes.sim * 20}%` }} />
-              <span className="bar-maybe" style={{ width: `${decisoes.talvez * 20}%` }} />
-              <span className="bar-no" style={{ width: `${decisoes.nao * 20}%` }} />
+              <span className="bar-yes" style={{ width: larguraDecisao(decisoes.sim) }} />
+              <span className="bar-maybe" style={{ width: larguraDecisao(decisoes.talvez) }} />
+              <span className="bar-no" style={{ width: larguraDecisao(decisoes.nao) }} />
             </div>
           </div>
         </section>

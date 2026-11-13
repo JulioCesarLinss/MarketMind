@@ -1,8 +1,9 @@
 """Agente pesquisador: monta uma referência de mercado ANTES do debate.
 
 Etapas:
-    1. IA planeja: 3 buscas (popular, intermediária, premium) + categoria do mapa + palavras do nome.
+    1. IA planeja: tipo, produto e cidade (o código monta 3 buscas: geral, popular, premium) + categoria do mapa.
     2. Busca na internet (Tavily/Ollama) e, ao mesmo tempo, conta lojas no mapa (OpenStreetMap).
+       Se vierem menos de 12 preços ou menos de 5 lojas, faz até 2 rodadas extras com outros termos (só páginas novas).
     3. O código recorta só os trechos com preços (R$) — menos tokens e menos ruído.
     4. IA extrai os exemplos (estabelecimento, item, preço, faixa, trecho de origem).
     5. O CÓDIGO valida (o preço tem que estar escrito no trecho) e calcula média, desvio-padrão,
@@ -39,10 +40,14 @@ log = logging.getLogger(__name__)
 
 PRECO_RE = re.compile(r"R\$\s?(\d{1,3}(?:\.\d{3})*(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?)")
 JANELA = 120            # caracteres antes/depois de cada preço
-MAX_TRECHOS_FONTE = 6
-MAX_TRECHOS = 25        # limita os tokens da extração (o limite do Groq grátis é por minuto)
+MAX_TRECHOS_FONTE = 8
+MAX_TRECHOS = 40        # por rodada: limita os tokens da extração (~3 mil; o limite do Groq grátis é por minuto)
+RESULTADOS_POR_BUSCA = 8  # páginas por busca (no Tavily, custa o mesmo crédito que 5)
+MAX_RODADAS = 3          # rodadas de busca: só passa para a próxima se ainda faltar preço
 MAX_POR_LOJA = 3        # no máximo 3 preços por estabelecimento
-MIN_PARA_TERCOS = 6     # a partir daqui, as faixas são definidas pelos terços de preço
+MIN_PARA_TERCOS = 3     # a partir daqui, as faixas são definidas pelos terços de preço (1+ preço em cada faixa)
+META_POR_FAIXA = 4      # objetivo: 4 preços por faixa (12 no total); abaixo disso, faz mais uma rodada de buscas
+META_LOJAS = 5          # e pelo menos 5 estabelecimentos diferentes
 FAIXA_VALIDA = (0.2, 5.0)  # descarta preços < 20% ou > 5x o preço do usuário (ex.: "R$ 1,00" de taxa)
 CACHE_HORAS = 24
 
@@ -62,9 +67,28 @@ def montar_consultas(plano: PlanoPesquisa) -> list[str]:
         f"{base} premium preço {produto}",
     ]
 
+
+def montar_consultas_extras(plano: PlanoPesquisa, rodada: int = 2, localizacao: str = "") -> list[str]:
+    """Rodadas 2 e 3 (só se as anteriores trouxeram poucos preços): termos diferentes para achar outras páginas."""
+    produto = plano.produto_comparavel.strip()
+    tipo, cidade = plano.tipo_estabelecimento, plano.cidade
+    if rodada == 2:
+        return [
+            f"{tipo} {cidade} tabela de preços",
+            f"quanto custa {produto} em {cidade}",
+            f"melhores {tipo} {cidade} {produto} valor",
+        ]
+    bairro = localizacao.split(",")[0].strip() or cidade  # "Boa Viagem, Recife - PE" → "Boa Viagem"
+    return [
+        f"{tipo} {bairro} {cidade} preços",
+        f"{produto} {cidade} promoção preço",
+        f"cardápio ou lista de serviços {tipo} {cidade} valores",
+    ]
+
 SISTEMA_EXTRACAO = """Você extrai preços de trechos de páginas da internet para comparar com uma oferta.
 Regras:
 - Liste apenas itens COMPARÁVEIS à oferta (mesmo tipo de produto ou serviço).
+- Liste TODOS os estabelecimentos diferentes que aparecerem (até 3 preços por estabelecimento): queremos exemplos baratos, médios e caros.
 - Use somente preços escritos nos trechos. Nunca invente, arredonde ou calcule preços.
 - Classifique cada estabelecimento em uma faixa (popular, intermediaria, premium) pelo posicionamento e pelo preço.
 - Ignore taxas, fretes, descontos isolados e itens de outro tipo."""
@@ -85,11 +109,11 @@ def precos_no_texto(texto: str) -> list[float]:
     return [v for v in (_numero(m) for m in PRECO_RE.findall(texto)) if v is not None]
 
 
-def recortar_trechos(resultados: list[ResultadoBusca], preco_usuario: float) -> list[dict]:
+def recortar_trechos(resultados: list[ResultadoBusca], preco_usuario: float, ignorar_urls: set[str] | None = None) -> list[dict]:
     """Recorta janelas de texto ao redor de preços plausíveis. Devolve [{id, url, titulo, texto}]."""
     minimo, maximo = preco_usuario * FAIXA_VALIDA[0], preco_usuario * FAIXA_VALIDA[1]
     trechos: list[dict] = []
-    urls_vistas = set()
+    urls_vistas = set(ignorar_urls or ())
     for r in resultados:
         if not r.url or r.url in urls_vistas:
             continue
@@ -113,10 +137,13 @@ def recortar_trechos(resultados: list[ResultadoBusca], preco_usuario: float) -> 
     return trechos
 
 
-def validar_exemplos(linhas: list[str], trechos: list[dict]) -> list[ExemploMercado]:
-    """Aceita só exemplos cujo preço está escrito no trecho citado (anti-invenção)."""
+def validar_exemplos(linhas: list[str], trechos: list[dict], anteriores: list[ExemploMercado] | None = None) -> list[ExemploMercado]:
+    """Aceita só exemplos cujo preço está escrito no trecho citado (anti-invenção).
+    `anteriores` = exemplos de uma rodada anterior (contam para o limite por loja e para repetição)."""
     por_id = {t["id"]: t for t in trechos}
-    validos, vistos = [], set()
+    anteriores = anteriores or []
+    validos: list[ExemploMercado] = []
+    vistos = {(e.estabelecimento.lower(), e.item.lower(), e.preco) for e in anteriores}
     for linha in linhas:
         partes = [p.strip() for p in linha.split("|")]
         if len(partes) != 5:
@@ -134,7 +161,7 @@ def validar_exemplos(linhas: list[str], trechos: list[dict]) -> list[ExemploMerc
         if chave in vistos:
             continue
         # Limite por loja: uma loja com cardápio grande não pode dominar a média do mercado
-        if sum(e.estabelecimento.lower() == estabelecimento.lower() for e in validos) >= MAX_POR_LOJA:
+        if sum(e.estabelecimento.lower() == estabelecimento.lower() for e in anteriores + validos) >= MAX_POR_LOJA:
             continue
         vistos.add(chave)
         validos.append(ExemploMercado(faixa=faixa, estabelecimento=estabelecimento, item=item, preco=preco, fonte_url=trecho["url"]))
@@ -152,6 +179,11 @@ def reclassificar_por_preco(exemplos: list[ExemploMercado]) -> list[ExemploMerca
     corte1, corte2 = round(n / 3), round(2 * n / 3)
     return [e.model_copy(update={"faixa": FAIXAS[0 if i < corte1 else 1 if i < corte2 else 2]})
             for i, e in enumerate(ordenados)]
+
+
+def precisa_mais_precos(exemplos: list[ExemploMercado]) -> bool:
+    lojas = {e.estabelecimento.lower() for e in exemplos}
+    return len(exemplos) < 3 * META_POR_FAIXA or len(lojas) < META_LOJAS
 
 
 def calcular_faixas(exemplos: list[ExemploMercado]) -> list[FaixaMercado]:
@@ -247,26 +279,28 @@ class Pesquisador:
                                                   plano.palavras_nome, settings.mapa_raio_metros))
             if self.usar_mapa else None
         )
-        resultados: list[ResultadoBusca] = []
+        exemplos: list[ExemploMercado] = []
+        trechos_usados: list[dict] = []
         if not self.busca:
             pesquisa.erro = "Busca na internet não configurada (defina TAVILY_API_KEY)."
-        else:
-            respostas = await asyncio.gather(*(self.busca.buscar(c) for c in pesquisa.consultas), return_exceptions=True)
-            for r in respostas:
-                if isinstance(r, list):
-                    resultados += r
-                elif isinstance(r, BuscaIndisponivelError):
-                    pesquisa.erro = f"Busca na internet indisponível: {r}"
-                elif isinstance(r, Exception):
-                    pesquisa.erro = f"Busca na internet falhou ({type(r).__name__})."
-
-        # 3-5. Recortar, extrair e validar
-        if resultados and preco > 0:
-            trechos = recortar_trechos(resultados, preco)
-            if trechos:
-                await self._extrair(negocio, trechos, pesquisa, preco)
+        elif preco > 0:
+            # 1ª rodada: geral, popular e premium
+            exemplos, trechos_usados = await self._rodada_busca(negocio, pesquisa, pesquisa.consultas, preco, [], set())
+            # Rodadas 2 e 3: só se ainda faltar preço (meta: 4 por faixa e 5 estabelecimentos diferentes)
+            for rodada in range(2, MAX_RODADAS + 1):
+                if not precisa_mais_precos(exemplos) or (pesquisa.erro or "").startswith("Busca na internet indisponível"):
+                    break
+                extras = montar_consultas_extras(plano, rodada, str(negocio.get("localizacao", "")))
+                pesquisa.consultas += extras
+                novos, trechos_novos = await self._rodada_busca(negocio, pesquisa, extras, preco, exemplos,
+                                                                 {t["url"] for t in trechos_usados})
+                exemplos += novos
+                trechos_usados += trechos_novos
+            if exemplos:
+                pesquisa.erro = None  # achou preços: falhas pontuais de uma busca não importam
+                self._consolidar(pesquisa, exemplos, trechos_usados, preco)
             else:
-                pesquisa.erro = pesquisa.erro or "As páginas encontradas não traziam preços comparáveis."
+                pesquisa.erro = pesquisa.erro or "Nenhum preço comparável foi confirmado nas páginas encontradas."
 
         if tarefa_mapa:
             lojas, erro_mapa = await tarefa_mapa
@@ -275,7 +309,6 @@ class Pesquisador:
                 raio_metros=settings.mapa_raio_metros,
                 categoria=plano.categoria_mapa,
                 nivel_concorrencia=mapa.nivel_concorrencia(lojas.quantidade if lojas else None, lojas.parcial if lojas else False),
-                # Na contagem parcial (busca por nome) os nomes podem ser de outro ramo: melhor não mostrar
                 nomes=lojas.nomes if lojas and not lojas.parcial else [],
                 fonte=lojas.fonte if lojas else "",
                 erro=erro_mapa,
@@ -287,7 +320,28 @@ class Pesquisador:
                 )
         return pesquisa
 
-    async def _extrair(self, negocio: dict, trechos: list[dict], pesquisa: PesquisaMercado, preco: float) -> None:
+    async def _rodada_busca(self, negocio: dict, pesquisa: PesquisaMercado, consultas: list[str], preco: float,
+                            anteriores: list[ExemploMercado], urls_vistas: set[str]) -> tuple[list[ExemploMercado], list[dict]]:
+        """Busca as consultas em paralelo, recorta os trechos com preço e extrai/valida os exemplos."""
+        resultados: list[ResultadoBusca] = []
+        respostas = await asyncio.gather(*(self.busca.buscar(c, RESULTADOS_POR_BUSCA) for c in consultas),
+                                         return_exceptions=True)
+        for r in respostas:
+            if isinstance(r, list):
+                resultados += r
+            elif isinstance(r, BuscaIndisponivelError):
+                pesquisa.erro = f"Busca na internet indisponível: {r}"
+            elif isinstance(r, Exception):
+                pesquisa.erro = f"Busca na internet falhou ({type(r).__name__})."
+        trechos = recortar_trechos(resultados, preco, urls_vistas) if resultados else []
+        if not trechos:
+            if resultados:
+                pesquisa.erro = pesquisa.erro or "As páginas encontradas não traziam preços comparáveis."
+            return [], []
+        return await self._extrair(negocio, trechos, pesquisa, preco, anteriores), trechos
+
+    async def _extrair(self, negocio: dict, trechos: list[dict], pesquisa: PesquisaMercado, preco: float,
+                       anteriores: list[ExemploMercado] | None = None) -> list[ExemploMercado]:
         texto_trechos = "\n".join(f"[{t['id']}] ({t['titulo'][:60]}) {t['texto']}" for t in trechos)
         pedido = (
             f"Oferta a comparar: {negocio.get('produto')} ({negocio.get('tipo')}), {negocio.get('localizacao')}, "
@@ -298,11 +352,10 @@ class Pesquisador:
         except Exception as erro:  # noqa: BLE001
             log.exception("Pesquisador: extração falhou")
             pesquisa.erro = f"Não foi possível ler os preços encontrados ({type(erro).__name__})."
-            return
-        exemplos = validar_exemplos(extracao.exemplos, trechos)
-        if not exemplos:
-            pesquisa.erro = pesquisa.erro or "Nenhum preço comparável foi confirmado nas páginas encontradas."
-            return
+            return []
+        return validar_exemplos(extracao.exemplos, trechos, anteriores)
+
+    def _consolidar(self, pesquisa: PesquisaMercado, exemplos: list[ExemploMercado], trechos: list[dict], preco: float) -> None:
         pesquisa.faixas = calcular_faixas(exemplos)
         pesquisa.total_precos = len(exemplos)
         precos = [e.preco for e in exemplos]

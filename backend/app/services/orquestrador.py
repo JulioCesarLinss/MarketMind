@@ -15,7 +15,7 @@ import time
 from collections.abc import Awaitable, Callable
 
 from app.agents.debate import pedido_rodada_1, pedido_rodada_2
-from app.agents.personas import PERSONAS, Persona
+from app.agents.personas import Persona, escolher_personas
 from app.config import settings
 from app.llm.base import LLMProvider, Mensagens
 from app.models.pesquisa import PesquisaMercado
@@ -35,7 +35,7 @@ class Orquestrador:
         semente: int | None = None,
     ):
         self.provider = provider
-        self.personas = personas or list(PERSONAS.values())
+        self.personas = personas or escolher_personas()  # padrão: 5
         self.semaforo = asyncio.Semaphore(concorrencia or settings.llm_concorrencia)
         self.ao_publicar = ao_publicar
         # Embaralha a ordem das falas na rodada 2 (semente fixa = resultado reproduzível nos testes)

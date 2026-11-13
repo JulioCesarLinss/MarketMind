@@ -6,6 +6,9 @@ const icones: Record<string, string> = {
   ocupado: '◷',
   critico: '⌕',
   fiel_regiao: '⌖',
+  conectado: '✧',
+  familia: '⌂',
+  consciente: '❀',
 }
 
 interface AgentCardProps {

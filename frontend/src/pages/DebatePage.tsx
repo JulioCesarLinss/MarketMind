@@ -17,7 +17,8 @@ function reais(valor: number): string {
 }
 
 export default function DebatePage({ personas, mensagens, rodadaAtual, pesquisa, statusTexto, erro, onVoltar }: DebatePageProps) {
-  const progresso = Math.min((mensagens.length / 10) * 100, 100)
+  const totalFalas = Math.max(personas.length, 1) * 2
+  const progresso = Math.min((mensagens.length / totalFalas) * 100, 100)
 
   return (
     <div className="page-shell debate-shell">
@@ -45,7 +46,7 @@ export default function DebatePage({ personas, mensagens, rodadaAtual, pesquisa,
 
         <section className="progress-panel">
           <div className="progress-copy">
-            <div><strong>{mensagens.length} <span>/ 10</span></strong><span>opiniões recebidas</span></div>
+            <div><strong>{mensagens.length} <span>/ {totalFalas}</span></strong><span>opiniões recebidas</span></div>
             <p>{statusTexto}</p>
           </div>
           <div className="progress-track"><div style={{ width: `${progresso}%` }} /></div>

@@ -3,7 +3,7 @@
 import asyncio
 
 from app.agents.exemplos import NEGOCIO_EXEMPLO
-from app.agents.personas import PERSONAS
+from app.agents.personas import PADRAO_AGENTES, PERSONAS
 from app.llm.base import LLMProvider
 from app.services.orquestrador import Orquestrador
 
@@ -36,8 +36,8 @@ def simular():
 
 def test_duas_rodadas_com_todas_as_personas():
     _, resultado, _ = simular()
-    assert len(resultado.da_rodada(1)) == len(PERSONAS)
-    assert len(resultado.da_rodada(2)) == len(PERSONAS)
+    assert len(resultado.da_rodada(1)) == PADRAO_AGENTES
+    assert len(resultado.da_rodada(2)) == PADRAO_AGENTES
 
 
 def test_cada_fala_e_publicada_no_feed():
@@ -75,4 +75,4 @@ def test_criterio_objetivo_de_mudanca():
 
 def test_conta_tokens():
     _, resultado, _ = simular()
-    assert resultado.tokens_usados == 100 * 2 * len(PERSONAS)
+    assert resultado.tokens_usados == 100 * 2 * PADRAO_AGENTES

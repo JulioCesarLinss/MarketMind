@@ -60,3 +60,27 @@ def test_rodada_2_mostra_objecao_e_sugestao_dos_outros():
     pedido = pedido_rodada_2([outro], random.Random(0))
     assert "Principal objeção: caro" in pedido
     assert "Sugestão ao dono: primeira compra com desconto" in pedido
+
+
+def test_contexto_mostra_a_entrega():
+    from app.agents.contexto import formatar_negocio
+    base = {"tipo": "Marmitaria", "preco": 20}
+    assert "Entrega: não informada" in formatar_negocio(base)
+    assert "não faz entrega" in formatar_negocio({**base, "entrega": {"disponivel": False}})
+    texto = formatar_negocio({**base, "entrega": {"disponivel": True, "modelo": "proprio", "taxa": 0,
+                                                  "prazo": "40 min", "area": "até 3 km", "garantias": "bolsa térmica"}})
+    assert "entregador próprio" in texto and "entrega grátis" in texto and "40 min" in texto and "bolsa térmica" in texto
+
+
+def test_escolher_personas():
+    from app.agents.personas import escolher_personas
+    assert len(escolher_personas()) == 5
+    assert [p.id for p in escolher_personas(2)] == ["economico", "exigente"]
+    assert len(escolher_personas(8)) == len(PERSONAS) == 8
+    assert len(escolher_personas(50)) == 8 and len(escolher_personas(0)) == 2
+
+
+def test_nenhuma_persona_pede_certificado():
+    for p in PERSONAS.values():
+        assert "certifica" not in p.prompt_sistema().split("Regras:")[0].lower()
+    assert "Não exija certificados" in PERSONAS["exigente"].prompt_sistema()

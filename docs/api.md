@@ -18,9 +18,10 @@ O CORS já libera `http://localhost:5173` (porta padrão do Vite).
 ## Fluxo
 
 ```
-1. POST /simulacoes?demo=true   (dados do formulário)  →  { "id": "bc7327ef54ca", "status": "rodando" }
+1. POST /simulacoes?demo=true&agentes=5   (dados do formulário)
+       →  { "id": "bc7327ef54ca", "status": "rodando", "personas": ["economico", "exigente", ...] }
 2. GET  /simulacoes/{id}/stream  →  feed ao vivo, nesta ordem:
-       etapa {"etapa":"pesquisa"} → pesquisa (referência de mercado) → mensagem × 10
+       etapa {"etapa":"pesquisa"} → pesquisa (referência de mercado) → mensagem × (2 × agentes)
        → etapa {"etapa":"analise"} → fim (resultado + relatório + pesquisa)
 3. GET  /simulacoes/{id}         →  tudo de uma vez (ex.: ao recarregar a página)
 ```
@@ -28,16 +29,16 @@ O CORS já libera `http://localhost:5173` (porta padrão do Vite).
 | Método | Rota | Para quê |
 |---|---|---|
 | `GET` | `/health` | API está de pé? |
-| `GET` | `/personas` | As 5 personas (id, nome, descrição, prioridades) para montar os cards |
-| `POST` | `/simulacoes` | Inicia uma simulação. Query `demo=true` = sem IA |
+| `GET` | `/personas` | As 8 personas disponíveis (id, nome, descrição, prioridades), na ordem em que entram |
+| `POST` | `/simulacoes` | Inicia uma simulação. Query `demo=true` = sem IA; `agentes=2..8` (padrão 5) = quantos consumidores participam (as N primeiras de `/personas`). A resposta traz `personas` (ids de quem participa) |
 | `GET` | `/simulacoes/{id}/stream` | Feed ao vivo (Server-Sent Events) |
-| `GET` | `/simulacoes/{id}` | Estado completo: `status`, `mensagens`, `resultado`, `erro` |
+| `GET` | `/simulacoes/{id}` | Estado completo: `status`, `mensagens`, `resultado`, `erro`, `personas` |
 
 Sem IA configurada no servidor e sem `demo=true`, o `POST` responde **503**. Dados inválidos → **422** (o FastAPI diz qual campo).
 
 ## 1. Enviar o formulário — `POST /simulacoes`
 
-Campos = formulário do README. `custos` e `concorrentes` são opcionais (no máximo 3 concorrentes).
+Campos = formulário do README. `custos`, `entrega` e `concorrentes` são opcionais (no máximo 3 concorrentes).
 
 ```json
 {
@@ -48,6 +49,7 @@ Campos = formulário do README. `custos` e `concorrentes` são opcionais (no má
   "publico": "Homens de 25 a 45 anos que trabalham em escritório",
   "divulgacao": "Instagram e agendamento por aplicativo",
   "custos": { "custo_fixo_mensal": 12000, "custo_variavel_unitario": 25, "taxa_plataforma_pct": 0 },
+  "entrega": { "disponivel": false, "modelo": null, "taxa": null, "prazo": "", "area": "", "garantias": "" },
   "concorrentes": [
     { "nome": "Barbearia de rua", "preco": 35.0, "observacao": "sem agendamento" },
     { "nome": "Rede de barbearias de shopping", "preco": 70.0, "observacao": "ambiente moderno" }
@@ -56,6 +58,12 @@ Campos = formulário do README. `custos` e `concorrentes` são opcionais (no má
 ```
 
 Regras: textos obrigatórios não podem ser vazios; `preco > 0`; preços e custos `≥ 0`; `taxa_plataforma_pct` de 0 a 100.
+
+`entrega` ("o produto pode ser entregue?"): `disponivel` true/false; se true, `modelo` é um de
+`proprio`, `app_delivery` (iFood, 99Food), `entregador_parceiro` (motoboy terceirizado, Lalamove, Uber Flash, Loggi),
+`correios` ou `outro`; `taxa` em reais (0 = grátis, null = não informada); `prazo`, `area` e `garantias`
+(o que torna a entrega confiável) são textos livres. As personas avaliam se o modelo é confiável para o produto.
+Sem o campo, as personas não supõem nada sobre entrega.
 
 ## 2. Feed ao vivo — `GET /simulacoes/{id}/stream`
 

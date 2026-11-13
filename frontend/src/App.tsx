@@ -30,7 +30,13 @@ export default function App() {
     return () => fonteRef.current?.close()
   }, [])
 
-  async function avaliar(negocio: NegocioPayload, demo: boolean) {
+  // Só as personas que participam desta simulação (o usuário escolhe quantas)
+  const [participantes, setParticipantes] = useState<string[]>([])
+  const personasDaSimulacao = participantes.length
+    ? personas.filter((p) => participantes.includes(p.id))
+    : personas
+
+  async function avaliar(negocio: NegocioPayload, demo: boolean, agentes: number) {
     setCarregando(true)
     setErroFormulario('')
     setErroFeed('')
@@ -38,12 +44,13 @@ export default function App() {
     setResultado(null)
     setPesquisa(null)
     setRodadaAtual(1)
-    setStatusTexto('Iniciando os cinco agentes...')
+    setStatusTexto(`Iniciando os ${agentes} agentes...`)
     fonteRef.current?.close()
     fonteRef.current = null
 
     try {
-      const simulacao = await criarSimulacao(negocio, demo)
+      const simulacao = await criarSimulacao(negocio, demo, agentes)
+      setParticipantes(simulacao.personas ?? personas.slice(0, agentes).map((p) => p.id))
       setTela('debate')
       setStatusTexto('Os agentes estão lendo as informações do produto...')
 
@@ -105,13 +112,13 @@ export default function App() {
   }
 
   if (tela === 'resultado' && resultado) {
-    return <ResultPage personas={personas} resultado={resultado} onNovaAvaliacao={novaAvaliacao} />
+    return <ResultPage personas={personasDaSimulacao} resultado={resultado} onNovaAvaliacao={novaAvaliacao} />
   }
 
   if (tela === 'debate') {
     return (
       <DebatePage
-        personas={personas}
+        personas={personasDaSimulacao}
         mensagens={mensagens}
         rodadaAtual={rodadaAtual}
         pesquisa={pesquisa}
@@ -122,5 +129,5 @@ export default function App() {
     )
   }
 
-  return <HomePage carregando={carregando} erro={erroFormulario} aoAvaliar={avaliar} />
+  return <HomePage personas={personas} carregando={carregando} erro={erroFormulario} aoAvaliar={avaliar} />
 }

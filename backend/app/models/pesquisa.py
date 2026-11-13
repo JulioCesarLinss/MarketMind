@@ -19,10 +19,14 @@ class PlanoPesquisa(BaseModel):
     produto_comparavel: str = Field(description="O produto/serviço principal em poucas palavras, como as pessoas buscam (ex.: 'corte e barba', 'hambúrguer artesanal')")
     cidade: str = Field(description="Só o nome da cidade da localização informada (ex.: 'Recife')")
     categoria_mapa: Literal[tuple(CATEGORIAS)] = Field(  # type: ignore[valid-type]
-        description="Categoria que melhor representa as lojas concorrentes no mapa ('outro' se nenhuma servir)"
+        description=("Categoria do mapa mais próxima das lojas concorrentes. Prefira sempre uma categoria próxima a 'outro' "
+                     "(ex.: marmitaria, comida caseira ou self-service = restaurante; açaí = sorveteria; "
+                     "salão de unhas = estetica_beleza). Use 'outro' só se nenhuma servir.")
     )
     palavras_nome: list[str] = Field(
-        description="2 ou 3 palavras curtas que costumam aparecer no NOME desses estabelecimentos (ex.: 'burger', 'hamburgueria')"
+        description=("2 ou 3 palavras que identificam o TIPO de negócio no nome dos estabelecimentos (ex.: 'burger', "
+                     "'hamburgueria'; 'marmita', 'marmitaria'). Nunca adjetivos ou públicos ('fitness', 'premium', 'gourmet'), "
+                     "que aparecem no nome de negócios de outros ramos.")
     )
 
 
@@ -34,7 +38,7 @@ class ExtracaoMercado(BaseModel):
             "Um item por produto/serviço COMPARÁVEL à oferta, no formato exato "
             "'faixa | estabelecimento | item | preço | trecho', onde faixa é popular, intermediaria ou premium, "
             "preço é só o número (ex.: 32,90) e trecho é o id do trecho de onde saiu (ex.: T3). "
-            "Liste TODOS os itens comparáveis que encontrar (até 20), de estabelecimentos diferentes sempre que possível. "
+            "Liste TODOS os itens comparáveis que encontrar (até 30), de estabelecimentos diferentes sempre que possível. "
             "Use apenas preços escritos nos trechos; não invente. Lista vazia se nada for comparável."
         )
     )

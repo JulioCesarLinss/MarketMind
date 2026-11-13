@@ -1,5 +1,13 @@
 import { useState, type FormEvent } from 'react'
-import type { NegocioPayload } from '../types'
+import {
+  MAX_AGENTES,
+  MIN_AGENTES,
+  MODELOS_ENTREGA,
+  PADRAO_AGENTES,
+  type ModeloEntrega,
+  type NegocioPayload,
+  type PersonaPublica,
+} from '../types'
 
 interface ConcorrenteRascunho {
   nome: string
@@ -8,14 +16,15 @@ interface ConcorrenteRascunho {
 }
 
 interface HomePageProps {
+  personas: PersonaPublica[]
   carregando: boolean
   erro: string
-  aoAvaliar: (negocio: NegocioPayload, demo: boolean) => void
+  aoAvaliar: (negocio: NegocioPayload, demo: boolean, agentes: number) => void
 }
 
 const concorrenteVazio = (): ConcorrenteRascunho => ({ nome: '', preco: '', observacao: '' })
 
-export default function HomePage({ carregando, erro, aoAvaliar }: HomePageProps) {
+export default function HomePage({ personas, carregando, erro, aoAvaliar }: HomePageProps) {
   const [nomeProduto, setNomeProduto] = useState('')
   const [descricao, setDescricao] = useState('')
   const [tipo, setTipo] = useState('')
@@ -29,6 +38,15 @@ export default function HomePage({ carregando, erro, aoAvaliar }: HomePageProps)
   const [taxa, setTaxa] = useState('0')
   const [concorrentes, setConcorrentes] = useState<ConcorrenteRascunho[]>([])
   const [demo, setDemo] = useState(true)
+  const [agentes, setAgentes] = useState(PADRAO_AGENTES)
+  const [entrega, setEntrega] = useState(false)
+  const [modeloEntrega, setModeloEntrega] = useState<ModeloEntrega>('proprio')
+  const [taxaEntrega, setTaxaEntrega] = useState('')
+  const [prazoEntrega, setPrazoEntrega] = useState('')
+  const [areaEntrega, setAreaEntrega] = useState('')
+  const [garantiasEntrega, setGarantiasEntrega] = useState('')
+  const maxAgentes = personas.length ? Math.min(MAX_AGENTES, personas.length) : MAX_AGENTES
+  const nomesAgentes = personas.slice(0, agentes).map((p) => p.nome.replace(/^Consumidora? /, ''))
 
   function atualizarConcorrente(indice: number, campo: keyof ConcorrenteRascunho, valor: string) {
     setConcorrentes((atuais) => atuais.map((item, i) =>
@@ -53,6 +71,16 @@ export default function HomePage({ carregando, erro, aoAvaliar }: HomePageProps)
             taxa_plataforma_pct: Number(taxa),
           }
         : null,
+      entrega: entrega
+        ? {
+            disponivel: true,
+            modelo: modeloEntrega,
+            taxa: taxaEntrega.trim() === '' ? null : Number(taxaEntrega),
+            prazo: prazoEntrega.trim(),
+            area: areaEntrega.trim(),
+            garantias: garantiasEntrega.trim(),
+          }
+        : { disponivel: false, modelo: null, taxa: null, prazo: '', area: '', garantias: '' },
       concorrentes: concorrentes
         .filter((item) => item.nome.trim() !== '')
         .map((item) => ({
@@ -62,7 +90,7 @@ export default function HomePage({ carregando, erro, aoAvaliar }: HomePageProps)
         })),
     }
 
-    aoAvaliar(negocio, demo)
+    aoAvaliar(negocio, demo, agentes)
   }
 
   return (
@@ -83,7 +111,7 @@ export default function HomePage({ carregando, erro, aoAvaliar }: HomePageProps)
         <section className="hero-section">
           <div className="hero-copy">
             <span className="eyebrow"><span className="eyebrow-line" /> SIMULE ANTES DE INVESTIR</span>
-            <h1>Uma ideia.<br /><span>Cinco perspectivas.</span></h1>
+            <h1>Uma ideia.<br /><span>Várias perspectivas.</span></h1>
             <p>
               Descubra como diferentes perfis de consumidores podem reagir ao seu produto,
               debater a oferta e apontar o que merece ser validado.
@@ -92,7 +120,7 @@ export default function HomePage({ carregando, erro, aoAvaliar }: HomePageProps)
               <div className="avatar-stack" aria-hidden="true">
                 <span>₱</span><span>✦</span><span>◷</span><span>⌕</span><span>⌖</span>
               </div>
-              <span><strong>5 agentes independentes</strong><br />2 rodadas de avaliação e debate</span>
+              <span><strong>De {MIN_AGENTES} a {MAX_AGENTES} agentes independentes</strong><br />2 rodadas de avaliação e debate</span>
             </div>
           </div>
           <div className="hero-visual" aria-hidden="true">
@@ -187,6 +215,52 @@ export default function HomePage({ carregando, erro, aoAvaliar }: HomePageProps)
                 <label htmlFor="divulgacao">Como pretende divulgar? <span>*</span></label>
                 <input id="divulgacao" value={divulgacao} onChange={(e) => setDivulgacao(e.target.value)} placeholder="Ex.: Instagram, indicação, anúncios, loja física..." maxLength={200} required />
               </div>
+            </div>
+
+            <div className="delivery-box">
+              <label className="check-row">
+                <input type="checkbox" checked={entrega} onChange={(e) => setEntrega(e.target.checked)} />
+                <span><strong>O produto pode ser entregue?</strong> Marque se você faz entrega ao cliente.</span>
+              </label>
+              {entrega && (
+                <div className="form-grid delivery-grid">
+                  <div className="field-group field-full">
+                    <label htmlFor="modeloEntrega">Modelo de entrega</label>
+                    <select id="modeloEntrega" value={modeloEntrega} onChange={(e) => setModeloEntrega(e.target.value as ModeloEntrega)}>
+                      {(Object.keys(MODELOS_ENTREGA) as ModeloEntrega[]).map((chave) => (
+                        <option key={chave} value={chave}>{MODELOS_ENTREGA[chave]}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="field-group">
+                    <label htmlFor="taxaEntrega">Taxa de entrega (R$)</label>
+                    <input id="taxaEntrega" type="number" min="0" step="0.01" value={taxaEntrega} onChange={(e) => setTaxaEntrega(e.target.value)} placeholder="0 = grátis" />
+                  </div>
+                  <div className="field-group">
+                    <label htmlFor="prazoEntrega">Prazo de entrega</label>
+                    <input id="prazoEntrega" value={prazoEntrega} onChange={(e) => setPrazoEntrega(e.target.value)} placeholder="Ex.: 40 minutos, 2 dias úteis" maxLength={80} />
+                  </div>
+                  <div className="field-group field-full">
+                    <label htmlFor="areaEntrega">Área atendida</label>
+                    <input id="areaEntrega" value={areaEntrega} onChange={(e) => setAreaEntrega(e.target.value)} placeholder="Ex.: até 5 km, toda a cidade, Brasil todo" maxLength={120} />
+                  </div>
+                  <div className="field-group field-full">
+                    <label htmlFor="garantiasEntrega">O que torna a entrega confiável?</label>
+                    <input id="garantiasEntrega" value={garantiasEntrega} onChange={(e) => setGarantiasEntrega(e.target.value)} placeholder="Ex.: rastreio pelo WhatsApp, embalagem lacrada, troca se chegar errado" maxLength={300} />
+                    <span className="field-help">Os agentes vão avaliar se esse modelo de entrega passa confiança para o seu produto.</span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="agents-picker">
+              <label htmlFor="agentes">Quantos consumidores vão avaliar? <span className="agents-picker-value">{agentes}</span></label>
+              <div className="agents-picker-row">
+                <span>{MIN_AGENTES}</span>
+                <input id="agentes" type="range" min={MIN_AGENTES} max={maxAgentes} step={1} value={Math.min(agentes, maxAgentes)} onChange={(e) => setAgentes(Number(e.target.value))} />
+                <span>{maxAgentes}</span>
+              </div>
+              {nomesAgentes.length > 0 && <span className="agents-picker-names">Participam: {nomesAgentes.join(', ')}. Mais agentes = mais opiniões, mas a simulação demora mais.</span>}
             </div>
 
             <details className="optional-section">

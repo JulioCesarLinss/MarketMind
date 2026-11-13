@@ -181,6 +181,9 @@ a { color: inherit; text-decoration: none; }
 .avatar-ocupado { background: #e8f5ef; color: #448c71; }
 .avatar-critico { background: #eaf1fb; color: #5d81b3; }
 .avatar-fiel_regiao { background: #f9eaf1; color: #ae6889; }
+.avatar-conectado { background: #f3e9fb; color: #8a5db3; }
+.avatar-familia { background: #fbf6e3; color: #a38a2c; }
+.avatar-consciente { background: #e8f4f4; color: #3f8a8a; }
 .agent-identity { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
 .agent-identity strong { color: #44495a; font-size: 11px; }
 .agent-identity > span { overflow: hidden; color: #a0a4b0; font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
@@ -584,3 +587,14 @@ a { color: inherit; text-decoration: none; }
     transform: translate(-50%, -50%) translate(0, 155px);
   }
 }
+
+/* Quantidade de agentes e entrega (formulário) */
+.agents-picker { display: flex; flex-direction: column; gap: 8px; margin: 4px 0 18px; }
+.agents-picker-row { display: flex; align-items: center; gap: 12px; }
+.agents-picker input[type="range"] { flex: 1; accent-color: #7167d0; }
+.agents-picker-value { min-width: 34px; text-align: center; font-weight: 700; color: #4f46a5; font-size: 15px; }
+.agents-picker-names { color: #676d7d; font-size: 11px; line-height: 1.5; }
+.delivery-box { margin: 4px 0 18px; padding: 14px 15px; border: 1px solid #e8e9f0; border-radius: 10px; background: #fbfbfe; }
+.delivery-box .check-row { margin-bottom: 0; }
+.delivery-grid { margin-top: 12px; }
+.delivery-grid select { width: 100%; height: 39px; border: 1px solid #e3e4ec; border-radius: 8px; background: #fff; padding: 0 10px; font: inherit; font-size: 13px; color: inherit; }

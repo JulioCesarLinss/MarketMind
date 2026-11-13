@@ -65,12 +65,14 @@ def test_validacao_descarta_preco_que_nao_esta_no_trecho():
 
 
 def test_media_desvio_e_dados_insuficientes():
-    faixas = {f.faixa: f for f in calcular_faixas([_ex("popular", 30), _ex("popular", 40), _ex("premium", 100)])}
-    assert faixas["popular"].media == 35 and faixas["popular"].desvio_padrao == 5.0
-    assert faixas["popular"].dados_suficientes
+    # Com menos de 3 preços, vale a faixa que a IA deu
+    faixas = {f.faixa: f for f in calcular_faixas([_ex("popular", 30), _ex("premium", 100)])}
+    assert faixas["popular"].media == 30 and faixas["popular"].desvio_padrao is None
     assert faixas["premium"].quantidade == 1 and not faixas["premium"].dados_suficientes
-    assert faixas["premium"].desvio_padrao is None
     assert faixas["intermediaria"].quantidade == 0 and faixas["intermediaria"].media is None
+    # Com 3 ou mais, os terços de preço garantem as 3 faixas preenchidas
+    faixas = {f.faixa: f for f in calcular_faixas([_ex("popular", 30, "A"), _ex("popular", 40, "B"), _ex("popular", 100, "C")])}
+    assert [faixas[n].media for n in ("popular", "intermediaria", "premium")] == [30, 40, 100]
 
 
 def test_posicao_do_preco():
@@ -141,9 +143,12 @@ def mapa_falso(monkeypatch):
 def test_pesquisa_completa(mapa_falso):
     busca = BuscaFalsa()
     p = asyncio.run(Pesquisador(IAFalsa(), IAFalsa(), busca).executar(NEGOCIOS["barbearia"]))
-    assert busca.consultas == ["barbearia Recife preço corte e barba",
-                               "barbearia Recife barato popular preço corte e barba",
-                               "barbearia Recife premium preço corte e barba"]
+    assert busca.consultas[:3] == ["barbearia Recife preço corte e barba",
+                                   "barbearia Recife barato popular preço corte e barba",
+                                   "barbearia Recife premium preço corte e barba"]
+    # Só 2 preços: faz as rodadas 2 e 3 (3 buscas novas cada); a página repetida não é lida de novo
+    assert len(busca.consultas) == 9 and "tabela de preços" in busca.consultas[3]
+    assert "Boa Viagem" in busca.consultas[6]  # a 3ª rodada usa o bairro
     assert p.total_precos == 2 and p.erro is None
     assert p.posicao.faixa_mais_proxima == "premium"
     assert p.lojas_regiao.quantidade == 5 and p.lojas_regiao.nivel_concorrencia == "media"
@@ -177,7 +182,7 @@ def test_cache_evita_nova_busca(mapa_falso):
     pesquisador = Pesquisador(IAFalsa(), IAFalsa(), busca)
     asyncio.run(pesquisador.executar(NEGOCIOS["barbearia"]))
     asyncio.run(pesquisador.executar(NEGOCIOS["barbearia"]))
-    assert len(busca.consultas) == 3  # a segunda veio do cache
+    assert len(busca.consultas) == 9  # 3 rodadas na 1ª vez; a segunda veio do cache
 
 
 def test_demo_data_e_valido():
@@ -208,3 +213,63 @@ def test_limite_de_precos_por_loja():
     trechos = [{"id": "T1", "url": "u", "titulo": "", "texto": "R$ 10 R$ 11 R$ 12 R$ 13"}]
     linhas = [f"popular | Mesma Loja | item {p} | {p} | T1" for p in (10, 11, 12, 13)]
     assert len(validar_exemplos(linhas, trechos)) == 3
+
+
+def test_segunda_rodada_soma_precos_de_paginas_novas(mapa_falso):
+    class BuscaDuasPaginas(BuscaFalsa):
+        async def buscar(self, consulta, max_resultados=5):
+            self.consultas.append(consulta)
+            if "tabela de preços" in consulta:
+                return [ResultadoBusca("Outra", "https://outra.com", "Barbearia Popular corte e barba R$ 40,00")]
+            return [ResultadoBusca("Página", "https://exemplo.com/precos", PAGINA)]
+
+    class IADuasRodadas(IAFalsa):
+        async def _completar(self, sistema, mensagens):
+            if "extrai preços" in sistema and "Barbearia Popular" in mensagens[0]["content"]:
+                import json
+                return json.dumps({"exemplos": ["popular | Barbearia Popular | corte e barba | 40,00 | T1"]})
+            return await super()._completar(sistema, mensagens)
+
+    p = asyncio.run(Pesquisador(IADuasRodadas(), IADuasRodadas(), BuscaDuasPaginas()).executar(NEGOCIOS["barbearia"]))
+    assert p.total_precos == 3
+    assert all(f.quantidade == 1 for f in p.faixas)  # 3 preços → uma em cada faixa
+    assert {f.url for f in p.fontes} == {"https://exemplo.com/precos", "https://outra.com"}
+
+
+def test_precisa_mais_precos():
+    poucos = [_ex("popular", 10 + i, f"Loja {i}") for i in range(11)]
+    assert mod.precisa_mais_precos(poucos)
+    muitos_poucas_lojas = [_ex("popular", 10 + i, f"Loja {i % 4}") for i in range(12)]
+    assert mod.precisa_mais_precos(muitos_poucas_lojas)
+    assert not mod.precisa_mais_precos([_ex("popular", 10 + i, f"Loja {i % 5}") for i in range(12)])
+
+
+def test_para_de_buscar_quando_atinge_a_meta(mapa_falso):
+    linhas = [f"popular | Loja {i % 5} | corte {i} | {30 + i},00 | T1" for i in range(12)]
+    pagina = " ".join(f"corte R$ {30 + i},00" for i in range(12))
+
+    class BuscaCheia(BuscaFalsa):
+        async def buscar(self, consulta, max_resultados=5):
+            self.consultas.append(consulta)
+            return [ResultadoBusca("Página", "https://cheia.com", pagina)]
+
+    busca = BuscaCheia()
+    p = asyncio.run(Pesquisador(IAFalsa(extracao=linhas), IAFalsa(extracao=linhas), busca).executar(NEGOCIOS["barbearia"]))
+    assert p.total_precos == 12 and len(busca.consultas) == 3  # bateu a meta na 1ª rodada
+
+
+def test_filtro_do_nominatim_fica_com_o_ramo_e_o_raio():
+    lat, lon = -8.12, -34.90
+    resultados = [
+        {"osm_type": "node", "osm_id": 1, "name": "Barbearia A", "category": "shop", "type": "hairdresser", "lat": "-8.121", "lon": "-34.901"},
+        {"osm_type": "node", "osm_id": 2, "name": "Rua da Barbearia", "category": "highway", "type": "residential", "lat": "-8.121", "lon": "-34.901"},
+        {"osm_type": "node", "osm_id": 3, "name": "Barbearia Longe", "category": "shop", "type": "hairdresser", "lat": "-8.20", "lon": "-34.90"},
+        {"osm_type": "node", "osm_id": 4, "name": "Padaria", "category": "shop", "type": "bakery", "lat": "-8.121", "lon": "-34.901"},
+    ]
+    aceitos = mapa.NOMINATIM_TIPOS["barbearia_salao"][1]
+    assert mapa.filtrar_nominatim(resultados, lat, lon, 2000, aceitos, por_tipo=True) == {"node1": "Barbearia A"}
+    assert mapa.filtrar_nominatim(resultados, lat, lon, 2000, aceitos, por_tipo=False) == {"node1": "Barbearia A"}
+
+
+def test_toda_categoria_tem_regra_no_nominatim():
+    assert set(mapa.NOMINATIM_TIPOS) == set(mapa.CATEGORIAS)

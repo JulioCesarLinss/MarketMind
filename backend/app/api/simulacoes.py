@@ -14,7 +14,7 @@ from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
-from app.agents.personas import PERSONAS
+from app.agents.personas import MAX_AGENTES, MIN_AGENTES, PADRAO_AGENTES, PERSONAS, escolher_personas
 from app.agents.pesquisador import Pesquisador
 from app.config import settings
 from app.llm import criar_provider
@@ -32,6 +32,7 @@ INTERVALO_PING = 15  # segundos: mantém a conexão do feed aberta em proxies (e
 class SimulacaoCriada(BaseModel):
     id: str
     status: str
+    personas: list[str]  # ids das personas que participam, na ordem
 
 
 class SimulacaoEstado(BaseModel):
@@ -41,6 +42,7 @@ class SimulacaoEstado(BaseModel):
     mensagens: list[MensagemDebate]
     resultado: ResultadoSimulacao | None
     erro: str | None
+    personas: list[str]
 
 
 class PersonaPublica(BaseModel):
@@ -52,7 +54,7 @@ class PersonaPublica(BaseModel):
 
 @router.get("/personas", response_model=list[PersonaPublica], tags=["personas"])
 def listar_personas():
-    """As 5 personas, para o frontend montar os cards do feed."""
+    """Todas as personas disponíveis (até 8), na ordem em que entram na simulação."""
     return [PersonaPublica(id=p.id, nome=p.nome, descricao=p.descricao, prioridades=p.prioridades)
             for p in PERSONAS.values()]
 
@@ -61,6 +63,8 @@ def listar_personas():
 async def criar_simulacao(
     negocio: NegocioEntrada,
     demo: bool = Query(False, description="true = respostas gravadas (sem IA, sem gastar cota). Bom para desenvolver o front."),
+    agentes: int = Query(PADRAO_AGENTES, ge=MIN_AGENTES, le=MAX_AGENTES,
+                         description="Quantos consumidores participam (as N primeiras personas de GET /personas)"),
 ):
     try:
         provider = criar_provider("mock" if demo else None)
@@ -72,8 +76,8 @@ async def criar_simulacao(
     except ConfiguracaoLLMError:
         analista = None  # o resultado vem só com os números do relatório
     pesquisador = PesquisadorDemo() if demo else _pesquisador_real()
-    sim = gerenciador.iniciar(negocio.model_dump(), provider, analista, pesquisador)
-    return SimulacaoCriada(id=sim.id, status=sim.status)
+    sim = gerenciador.iniciar(negocio.model_dump(), provider, analista, pesquisador, escolher_personas(agentes))
+    return SimulacaoCriada(id=sim.id, status=sim.status, personas=sim.personas)
 
 
 _PESQUISADOR: Pesquisador | None = None
@@ -107,7 +111,7 @@ def _buscar(id_: str) -> Simulacao:
 def obter_simulacao(id_: str):
     sim = _buscar(id_)
     return SimulacaoEstado(id=sim.id, status=sim.status, negocio=sim.negocio, mensagens=sim.mensagens,
-                           resultado=sim.resultado, erro=sim.erro)
+                           resultado=sim.resultado, erro=sim.erro, personas=sim.personas)
 
 
 def _sse(evento: Evento) -> str:

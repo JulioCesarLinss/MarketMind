@@ -40,8 +40,11 @@ export async function buscarPersonas(): Promise<PersonaPublica[]> {
 export async function criarSimulacao(
   negocio: NegocioPayload,
   demo: boolean,
+  agentes: number,
 ): Promise<SimulacaoCriada> {
-  const rota = demo ? '/simulacoes?demo=true' : '/simulacoes'
+  const parametros = new URLSearchParams({ agentes: String(agentes) })
+  if (demo) parametros.set('demo', 'true')
+  const rota = `/simulacoes?${parametros}`
   const resposta = await fetch(`${API_URL}${rota}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
