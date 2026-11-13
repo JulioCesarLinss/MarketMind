@@ -152,8 +152,11 @@ export default function LandingPage({ onComecar }: LandingPageProps) {
             <div className="landing-electron landing-inner inner-two">⌕</div>
 
             <div className="landing-nucleus">
-              <span>✳</span>
-              <strong>MM</strong>
+              <img
+                src="/favicon2.svg"
+                alt="MarketMind"
+                className="landing-nucleus-logo"
+              />
             </div>
 
             <div className="landing-visual-caption">

@@ -117,7 +117,7 @@ export default function HomePage({ personas, carregando, erro, aoAvaliar }: Home
       <main id="inicio">
         <section className="hero-section">
           <div className="hero-copy">
-            <span className="eyebrow"><span className="eyebrow-line" /> SIMULE ANTES DE INVESTIR</span>
+            <span className="eyebrow"><span className="eyebrow-line" /> SIMULAÇÃO ANTES DE INVESTER</span>
             <h1>Uma ideia.<br /><span>Cinco perspectivas.</span></h1>
             <p>
               Descubra como diferentes perfis de consumidores podem reagir ao seu produto,
@@ -144,12 +144,14 @@ export default function HomePage({ personas, carregando, erro, aoAvaliar }: Home
             <div className="orbit-node node-four agent-orbit-motion inner-agent-two">⌕</div>
 
             {/* Núcleo do MarketMind */}
-            <div className="orbit-core">
-              <span className="core-spark">✳</span>
-              <span>MM</span>
+            <div className="landing-nucleus">
+              <img
+                src="/favicon2.svg"
+                alt="MarketMind"
+                className="landing-nucleus-logo"
+              />
             </div>
 
-            <div className="visual-caption">IDEIAS EM PERSPECTIVA</div>
           </div>
         </section>
 
@@ -215,7 +217,7 @@ export default function HomePage({ personas, carregando, erro, aoAvaliar }: Home
                 <div className="input-prefix"><span>R$</span><input id="preco" type="number" min="0.01" step="0.01" value={preco} onChange={(e) => setPreco(e.target.value)} placeholder="0,00" required /></div>
               </div>
               <div className="field-group">
-                <label htmlFor="publico">Público pretendido <span>*</span></label>
+                <label htmlFor="publico">Público alvo<span>*</span></label>
                 <input id="publico" value={publico} onChange={(e) => setPublico(e.target.value)} placeholder="Quem você quer atingir?" maxLength={200} required />
               </div>
               <div className="field-group field-full">
