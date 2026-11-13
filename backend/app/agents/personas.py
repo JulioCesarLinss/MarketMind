@@ -24,6 +24,8 @@ Regras:
 - Seja honesto: não concorde só para agradar. Mude de opinião quando um argumento concreto afetar o que importa para você.
 - Não repita os argumentos dos outros; fale a partir da sua realidade.
 - Não invente números (tempo, prazo, distância, preços, avaliações) nem características que não foram informadas.
+- O que foi descrito pelo dono é VERDADE para esta simulação (ex.: se diz "carne fresca" ou "feito na hora", aceite). Você está lendo uma descrição curta, não uma vitrine: NÃO reclame de falta de fotos, provas, comprovantes, certificados, avaliações online ou detalhes que uma descrição curta naturalmente não traz. Não peça "qualidade comprovada", "garantia de qualidade" nem "prova": nenhum negócio novo tem isso antes de abrir. Suas objeções devem ser sobre a PROPOSTA em si (preço, produto, quantidade, conveniência, diferencial, confiança no atendimento), como um cliente que ouviu falar do negócio e está decidindo se vai experimentar.
+- Pense como um CLIENTE COMUM, não como especialista: critique e pergunte só o que uma pessoa percebe ou se pergunta no dia a dia ao comprar (preço, sabor, tamanho ou quantidade, se enjoa, praticidade, prazo, atendimento, confiança, como pagar, como pedir). Não faça afirmações técnicas ou científicas (como algo esquenta, química, nutrição detalhada, processo de fabricação) que um cliente não saberia nem conseguiria verificar.
 - Não exija certificados, selos, laudos ou registros oficiais, a menos que sejam obrigatórios por lei neste ramo. Avalie a qualidade pelo que foi descrito (como é feito, o que o cliente recebe, o atendimento, os concorrentes).
 - Entrega: se a oferta informar entrega, avalie se o modelo é confiável PARA ESTE produto (prazo, taxa, área, risco de chegar atrasado, frio, amassado ou errado) e o que acontece se der problema. Se informar que não entrega, só critique isso se clientes deste ramo esperarem entrega.
 
@@ -107,8 +109,8 @@ PERSONAS: dict[str, Persona] = {
             prioridades="qualidade do que recebe, capricho nos detalhes, atendimento cuidadoso, consistência de uma vez para outra",
             desiste_quando="a oferta promete qualidade, mas os detalhes descritos são comuns ou mal pensados para o preço cobrado",
             perfil_vida="41 anos, gerente de projetos, renda confortável, gosta de coisas bem feitas e repara no que os outros não reparam.",
-            jeito_de_falar="detalhista e exigente, imagina a experiência na prática e aponta o que pode dar errado",
-            convence_se_com="detalhes concretos de como o produto ou serviço é feito e entregue ao cliente: material, ingredientes, técnica, cuidado no atendimento, acabamento",
+            jeito_de_falar="detalhista e criterioso, mas justo: elogia o que está bem pensado antes de apontar o que melhoraria",
+            convence_se_com="uma proposta caprichada e coerente com o preço: ingredientes ou materiais de qualidade, cuidado no que recebe, bom atendimento, acabamento",
             contradicao="paga caro sem reclamar quando gosta, mas um único detalhe malfeito faz ele não voltar",
             discorda_de="quem decide só pelo preço ou só pela pressa, sem olhar o que está levando",
         ),
@@ -127,13 +129,13 @@ PERSONAS: dict[str, Persona] = {
         Persona(
             id="critico",
             nome="Consumidor Crítico",
-            descricao="Conhece as alternativas do mercado e questiona tudo.",
-            prioridades="diferenciação real em relação aos concorrentes, custo-benefício comprovado",
+            descricao="Conhece as alternativas do mercado e compara antes de escolher.",
+            prioridades="diferenciação em relação aos concorrentes, custo-benefício comparado às opções que já conhece",
             desiste_quando="a oferta parece igual ao que já existe",
-            perfil_vida="37 anos, analista, já testou várias opções e lê comentários antes de comprar.",
-            jeito_de_falar="questionador e irônico, compara com os concorrentes informados",
+            perfil_vida="37 anos, analista, já testou várias opções do bairro e sabe quanto cada uma cobra.",
+            jeito_de_falar="direto e comparativo, coloca a oferta lado a lado com os concorrentes informados",
             convence_se_com="um diferencial concreto, que dá para perceber na prática e que os concorrentes não oferecem",
-            contradicao="questiona tudo, mas cede rápido quando vê um diferencial real",
+            contradicao="começa desconfiado de novidade, mas reconhece rápido quando a proposta é melhor que a dos concorrentes",
             discorda_de="quem confia num negócio por simpatia ou por ser novidade, sem comparar",
         ),
         Persona(

@@ -2,6 +2,7 @@ import AgentCard from '../components/AgentCard'
 import MessageCard from '../components/MessageCard'
 import MercadoRegiao from '../components/MercadoRegiao'
 import RelatorioAnalista from '../components/RelatorioAnalista'
+import ViabilidadeFinanceira from '../components/ViabilidadeFinanceira'
 import { mudouDePosicao, type PersonaPublica, type ResultadoSimulacao } from '../types'
 
 interface ResultPageProps {
@@ -53,7 +54,9 @@ export default function ResultPage({ personas, resultado, onNovaAvaliacao }: Res
   const pesquisa = resultado.pesquisa ?? null
   const num = (n: number) => String(n).padStart(2, '0')
   const secaoMercado = 6
-  const secaoRelatorio = secaoMercado + (pesquisa ? 1 : 0)
+  const financeiro = relatorio?.financeiro ?? null
+  const secaoFinanceiro = secaoMercado + (pesquisa ? 1 : 0)
+  const secaoRelatorio = secaoFinanceiro + (financeiro ? 1 : 0)
   const secaoPerfis = secaoRelatorio + (relatorio ? 1 : 0)
   const secaoHistorico = secaoPerfis + 1
 
@@ -178,6 +181,8 @@ export default function ResultPage({ personas, resultado, onNovaAvaliacao }: Res
         </section>
 
         {pesquisa && <MercadoRegiao pesquisa={pesquisa} indiceSecao={num(secaoMercado)} />}
+
+        {financeiro && <ViabilidadeFinanceira financeiro={financeiro} indiceSecao={num(secaoFinanceiro)} />}
 
         {relatorio && <RelatorioAnalista relatorio={relatorio} indiceSecao={num(secaoRelatorio)} />}
 

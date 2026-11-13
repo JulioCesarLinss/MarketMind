@@ -15,6 +15,7 @@ const NIVEL: Record<string, { rotulo: string; classe: string }> = {
   media: { rotulo: 'Concorrência média', classe: 'nivel-medio' },
   alta: { rotulo: 'Concorrência alta', classe: 'nivel-alto' },
   indeterminado: { rotulo: 'Não foi possível medir', classe: 'nivel-indeterminado' },
+  'nenhum concorrente no bairro': { rotulo: 'Nenhuma no bairro', classe: 'nivel-baixo' },
 }
 
 export default function MercadoRegiao({ pesquisa, indiceSecao }: MercadoRegiaoProps) {
@@ -22,6 +23,9 @@ export default function MercadoRegiao({ pesquisa, indiceSecao }: MercadoRegiaoPr
   const precoUsuario = pesquisa.posicao?.preco_usuario ?? null
   const lojas = pesquisa.lojas_regiao
   const nivel = NIVEL[lojas?.nivel_concorrencia ?? 'indeterminado'] ?? NIVEL.indeterminado
+  const naCidade = lojas?.abrangencia === 'cidade'
+  // Nenhuma loja nem na cidade: não mostra número (a observação acima explica)
+  const mostrarLojas = !(naCidade && lojas?.quantidade === 0)
 
   // Escala da régua: do menor ao maior valor (incluindo o preço do usuário), com folga
   const valores = faixasComDados.flatMap((f) => [f.minimo as number, f.maximo as number])
@@ -61,17 +65,19 @@ export default function MercadoRegiao({ pesquisa, indiceSecao }: MercadoRegiaoPr
           )}
         </article>
 
-        <article className="market-card">
-          <span>LOJAS DO MESMO RAMO NA REGIÃO</span>
+        {mostrarLojas && <article className="market-card">
+          <span>{naCidade ? `LOJAS DO MESMO RAMO EM ${(lojas?.area || 'SUA CIDADE').toUpperCase()}` : 'LOJAS DO MESMO RAMO NA REGIÃO'}</span>
           {lojas && lojas.quantidade !== null && lojas.nivel_concorrencia !== 'indeterminado' ? (
-            <strong>{lojas.quantidade}<small> no mínimo · raio de {(lojas.raio_metros / 1000).toLocaleString('pt-BR')} km</small></strong>
+            naCidade
+              ? <strong>{lojas.quantidade}<small> no mínimo · nenhuma perto do seu bairro</small></strong>
+              : <strong>{lojas.quantidade}<small> no mínimo · raio de {(lojas.raio_metros / 1000).toLocaleString('pt-BR')} km</small></strong>
           ) : (
             <strong className="market-unknown">—</strong>
           )}
           <span className={`nivel-pill ${nivel.classe}`}>{nivel.rotulo}</span>
           {lojas?.nomes && lojas.nomes.length > 0 && <p className="market-meta">Ex.: {lojas.nomes.slice(0, 4).join(', ')}</p>}
           <p className="market-meta">{lojas?.erro || lojas?.observacao}</p>
-        </article>
+        </article>}
       </div>
 
       {faixasComDados.length > 0 && (

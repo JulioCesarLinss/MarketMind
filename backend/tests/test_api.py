@@ -109,3 +109,15 @@ def test_api_nao_mostra_nem_aceita_personas_nao_aprovadas(client):
     assert ids == ["economico", "exigente", "ocupado", "critico", "fiel_regiao"]
     rota = "/simulacoes?demo=true&personas=economico&personas=conectado"
     assert client.post(rota, json=NEGOCIOS["barbearia"]).status_code == 422
+
+
+def test_relatorio_financeiro_no_resultado(client):
+    custos = {"custo_fixo_mensal": 3500, "custo_variavel_unitario": 11, "taxa_plataforma_pct": 23,
+              "lucro_esperado_pct": 30, "investimento_inicial": 20000}
+    criada = client.post("/simulacoes?demo=true", json={**NEGOCIOS["barbearia"], "custos": custos}).json()
+    fim = [json.loads(d) for t, d in ler_eventos(client, criada["id"]) if t == "fim"][0]
+    fin = fim["relatorio"]["financeiro"]
+    assert fin["lucro_por_venda"] > 0 and fin["cenarios"] and "impostos" in fin["aviso_custos"]
+    # só lucro esperado e investimento vazios também valem (campos opcionais)
+    minimo = {"custo_variavel_unitario": 30}
+    assert client.post("/simulacoes?demo=true", json={**NEGOCIOS["barbearia"], "custos": minimo}).status_code == 201

@@ -35,6 +35,8 @@ export default function HomePage({ personas, carregando, erro, aoAvaliar }: Home
   const [custoFixo, setCustoFixo] = useState('0')
   const [custoVariavel, setCustoVariavel] = useState('0')
   const [taxa, setTaxa] = useState('0')
+  const [lucroEsperado, setLucroEsperado] = useState('')
+  const [investimento, setInvestimento] = useState('')
   const [concorrentes, setConcorrentes] = useState<ConcorrenteRascunho[]>([])
   const [demo, setDemo] = useState(true)
   // Personas que o usuário DESMARCOU (começa com todas marcadas, mesmo antes de a lista chegar da API)
@@ -76,6 +78,8 @@ export default function HomePage({ personas, carregando, erro, aoAvaliar }: Home
             custo_fixo_mensal: Number(custoFixo),
             custo_variavel_unitario: Number(custoVariavel),
             taxa_plataforma_pct: Number(taxa),
+            lucro_esperado_pct: lucroEsperado.trim() === '' ? null : Number(lucroEsperado),
+            investimento_inicial: investimento.trim() === '' ? null : Number(investimento),
           }
         : null,
       entrega: entrega
@@ -206,7 +210,7 @@ export default function HomePage({ personas, carregando, erro, aoAvaliar }: Home
             <div className="form-grid">
               <div className="field-group">
                 <label htmlFor="tipo">Segmento e modelo de venda <span>*</span></label>
-                <input id="tipo" value={tipo} onChange={(e) => setTipo(e.target.value)} placeholder="Ex.: alimentação, delivery" maxLength={120} required />
+                <input id="tipo" value={tipo} onChange={(e) => setTipo(e.target.value)} placeholder="Ex.: alimentação, venda de serviço" maxLength={120} required />
               </div>
               <div className="field-group">
                 <label htmlFor="localizacao">Localização <span>*</span></label>
@@ -294,13 +298,13 @@ export default function HomePage({ personas, carregando, erro, aoAvaliar }: Home
             <details className="optional-section">
               <summary>
                 <span className="optional-plus">＋</span>
-                <span><strong>Adicionar dados complementares</strong><small>Custos e concorrentes (opcional)</small></span>
+                <span><strong>Adicionar dados complementares</strong><small>Custos, lucro esperado, investimento e concorrentes (opcional)</small></span>
                 <span className="optional-tag">OPCIONAL</span>
               </summary>
               <div className="optional-content">
                 <label className="check-row">
                   <input type="checkbox" checked={incluirCustos} onChange={(e) => setIncluirCustos(e.target.checked)} />
-                  <span>Informar custos para contextualizar a parte financeira</span>
+                  <span>Informar custos para ver se o negócio se paga (lucro, ponto de equilíbrio e retorno do investimento)</span>
                 </label>
                 {incluirCustos && (
                   <div className="form-grid cost-grid">
@@ -309,12 +313,20 @@ export default function HomePage({ personas, carregando, erro, aoAvaliar }: Home
                       <input id="custoFixo" type="number" min="0" step="0.01" value={custoFixo} onChange={(e) => setCustoFixo(e.target.value)} />
                     </div>
                     <div className="field-group">
-                      <label htmlFor="custoVariavel">Custo variável por unidade (R$)</label>
+                      <label htmlFor="custoVariavel">Custo médio de produção por unidade (R$)</label>
                       <input id="custoVariavel" type="number" min="0" step="0.01" value={custoVariavel} onChange={(e) => setCustoVariavel(e.target.value)} />
                     </div>
                     <div className="field-group">
                       <label htmlFor="taxa">Taxa de plataforma (%)</label>
                       <input id="taxa" type="number" min="0" max="100" step="0.1" value={taxa} onChange={(e) => setTaxa(e.target.value)} />
+                    </div>
+                    <div className="field-group">
+                      <label htmlFor="lucroEsperado">Lucro esperado por venda (%)</label>
+                      <input id="lucroEsperado" type="number" min="0" max="99" step="1" value={lucroEsperado} onChange={(e) => setLucroEsperado(e.target.value)} placeholder="Opcional · ex.: 30" />
+                    </div>
+                    <div className="field-group">
+                      <label htmlFor="investimento">Investimento inicial (R$)</label>
+                      <input id="investimento" type="number" min="0" step="0.01" value={investimento} onChange={(e) => setInvestimento(e.target.value)} placeholder="Opcional · ex.: 20000" />
                     </div>
                   </div>
                 )}

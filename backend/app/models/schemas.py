@@ -96,8 +96,54 @@ class Indicadores(BaseModel):
     por_persona: list[IndicadorPersona]
 
 
+class CenarioVendas(BaseModel):
+    """"Com N clientes por dia, quanto sobra?" (1 cliente = 1 venda)."""
+
+    clientes_dia: int
+    vendas_mes: int
+    faturamento_mes: float
+    lucro_dia: float = Field(description="Lucro do mês ÷ dias de funcionamento (já descontado o custo fixo)")
+    lucro_mes: float = Field(description="Vendas × lucro por venda − custo fixo (negativo = prejuízo)")
+    meses_para_pagar: float | None = Field(description="Investimento ÷ lucro do mês; None sem investimento ou com prejuízo")
+
+
+class CenarioPreco(BaseModel):
+    rotulo: str = Field(description="Ex.: Seu preço, Média do mercado na região")
+    preco: float
+    lucro_por_venda: float
+    margem_pct: float
+    aceitam: int | None = Field(description="Quantos agentes pagariam este preço (pelo preço máximo de cada um)")
+
+
+class Financeiro(BaseModel):
+    """Relatório financeiro, calculado pelo CÓDIGO (services/financeiro.py). Só existe se o usuário informou os custos."""
+
+    preco: float
+    custo_unitario: float
+    taxa_plataforma_pct: float
+    custo_fixo_mensal: float
+    receita_liquida_venda: float = Field(description="Preço − taxa da plataforma")
+    lucro_por_venda: float = Field(description="Receita líquida − custo de produção (margem de contribuição)")
+    margem_pct: float = Field(description="Lucro por venda ÷ preço, em %")
+    lucro_esperado_pct: float | None
+    preco_para_lucro_esperado: float | None
+    avaliacao_preco: Literal["prejuizo", "abaixo_do_esperado", "dentro_do_esperado", "sem_meta"]
+    resumo_preco: str
+    dias_por_mes: int
+    investimento_inicial: float | None
+    cenarios: list[CenarioVendas]
+    cenarios_preco: list[CenarioPreco]
+    alertas: list[str]
+    nao_considerado: list[str]
+    aviso_custos: str = ("Estes cálculos NÃO consideram impostos nem pagamento de funcionários (salários, encargos e o seu "
+                         "pró-labore). O lucro real tende a ser menor que o mostrado.")
+    aviso: str = ("Estimativa simplificada com os valores que você informou: não é previsão de vendas nem de lucro. "
+                  "Negócios novos costumam levar alguns meses para atingir o movimento esperado.")
+
+
 class Relatorio(BaseModel):
     indicadores: Indicadores
+    financeiro: Financeiro | None = Field(default=None, description="None se o usuário não informou os custos")
     analise: AnaliseDebate | None = Field(default=None, description="None se o analista falhou")
     origem_analise: str | None = Field(default=None, description="Quem escreveu a análise, ex.: groq/openai/gpt-oss-120b")
     erro_analise: str | None = None

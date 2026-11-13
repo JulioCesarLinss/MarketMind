@@ -38,7 +38,13 @@ def formatar_pesquisa(pesquisa: "PesquisaMercado") -> str:
     if pesquisa.observacao:
         linhas.append(f"- Observação: {pesquisa.observacao}")
     lojas = pesquisa.lojas_regiao
-    if lojas and lojas.quantidade is not None:
+    if lojas and lojas.abrangencia == "cidade":
+        if lojas.quantidade:
+            nomes = f" (ex.: {', '.join(lojas.nomes[:5])})" if lojas.nomes else ""
+            linhas.append(f"- Lojas do mesmo ramo: nenhuma mapeada perto do endereço; na cidade ({lojas.area}) há pelo menos "
+                          f"{lojas.quantidade}{nomes}, em outros bairros.")
+        # sem nenhuma nem na cidade: não informa número (a observação já explica)
+    elif lojas and lojas.quantidade is not None:
         nomes = f" (ex.: {', '.join(lojas.nomes[:5])})" if lojas.nomes else ""
         if lojas.nivel_concorrencia == "indeterminado":
             linhas.append(f"- Lojas do mesmo ramo na região: contagem incompleta{nomes}; o nível de concorrência não pôde ser medido.")
@@ -53,7 +59,7 @@ def formatar_entrega(entrega: dict | None) -> str:
     from app.models.negocio import MODELOS_ENTREGA
 
     if not entrega:
-        return "- Entrega: não informada"
+        return "- Entrega: sem detalhes neste campo (se o tipo de negócio ou os canais citam delivery ou app, considere que entrega)"
     if not entrega.get("disponivel"):
         return "- Entrega: não faz entrega (atendimento presencial ou retirada no local)"
     partes = [f"faz entrega por {MODELOS_ENTREGA.get(entrega.get('modelo') or 'outro', 'modelo não informado')}"]

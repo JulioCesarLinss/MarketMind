@@ -224,11 +224,18 @@ def observar_regiao(pesquisa: PesquisaMercado, cidade: str, bairro: str, busca_f
     """Observação em texto quando faltam concorrentes (ex.: possível negócio único na região).
     Só afirma algo quando a busca e o mapa funcionaram: falha técnica não é ausência de concorrente."""
     perto = f"perto de {bairro}" if bairro else f"em {cidade}"
-    lojas = pesquisa.lojas_regiao.quantidade if pesquisa.lojas_regiao else None
+    regiao = pesquisa.lojas_regiao
+    lojas = regiao.quantidade if regiao else None
     tem_precos = pesquisa.total_precos > 0
+    # Nenhuma perto do bairro, mas há na cidade: a concorrência direta é pequena
+    if regiao and regiao.abrangencia == "cidade" and lojas:
+        return (f"Nenhuma loja do ramo mapeada {perto}: pode ser um negócio único no bairro. "
+                f"Em {regiao.area or cidade} há pelo menos {lojas} no mapa, em outros bairros.")
+    # Quantidade 0 com abrangência "cidade" = não há nem perto nem na cidade inteira
+    onde_zero = f"em {regiao.area or cidade}" if regiao and regiao.abrangencia == "cidade" else perto
     if not tem_precos and busca_funcionou and lojas == 0:
         return (f"Não encontramos negócios parecidos em {cidade}: nenhum preço na internet e nenhuma loja do ramo "
-                f"mapeada {perto}. Pode ser um negócio único na região (ou ainda pouco presente na internet e no mapa).")
+                f"mapeada {onde_zero}. Pode ser um negócio único na região (ou ainda pouco presente na internet e no mapa).")
     if not tem_precos and busca_funcionou and lojas is None:
         return (f"Nenhum negócio parecido com preço publicado foi encontrado na internet em {cidade}. "
                 "Pode ser um negócio único na região (ou que divulga pouco os preços).")
@@ -236,8 +243,8 @@ def observar_regiao(pesquisa: PesquisaMercado, cidade: str, bairro: str, busca_f
         return (f"Há lojas do ramo {perto}, mas nenhuma com preço publicado na internet em {cidade}: "
                 "a comparação de preço fica por conta dos concorrentes que você informar.")
     if tem_precos and lojas == 0:
-        return (f"Nenhuma loja do ramo mapeada {perto}: na vizinhança pode ser um negócio único. "
-                f"Os preços acima são de outras partes de {cidade}.")
+        return (f"Nenhuma loja do ramo mapeada {onde_zero}: pode ser um negócio único na região. "
+                "Os preços acima vêm de páginas da internet de negócios parecidos.")
     return ""
 
 
@@ -365,7 +372,10 @@ class Pesquisador:
                 quantidade=lojas.quantidade if lojas else None,
                 raio_metros=settings.mapa_raio_metros,
                 categoria=plano.categoria_mapa,
-                nivel_concorrencia=mapa.nivel_concorrencia(lojas.quantidade if lojas else None, lojas.parcial if lojas else False),
+                abrangencia=lojas.abrangencia if lojas else "bairro",
+                area=lojas.area if lojas else "",
+                nivel_concorrencia=mapa.nivel_concorrencia(lojas.quantidade if lojas else None, lojas.parcial if lojas else False,
+                                                           lojas.abrangencia if lojas else "bairro"),
                 nomes=lojas.nomes if lojas and not lojas.parcial else [],
                 fonte=lojas.fonte if lojas else "",
                 erro=erro_mapa,

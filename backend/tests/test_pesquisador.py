@@ -316,7 +316,7 @@ def test_observacao_de_negocio_unico():
     assert "negócio único" in mod.observar_regiao(_pesquisa(0, 0), "Recife", "Boa Viagem", True)
     assert "negócio único" in mod.observar_regiao(_pesquisa(0, None), "Recife", "", True)
     assert "nenhuma com preço" in mod.observar_regiao(_pesquisa(0, 4), "Recife", "Boa Viagem", True)
-    assert "vizinhança" in mod.observar_regiao(_pesquisa(6, 0), "Recife", "Boa Viagem", True)
+    assert "negócio único" in mod.observar_regiao(_pesquisa(6, 0), "Recife", "Boa Viagem", True)
     assert mod.observar_regiao(_pesquisa(6, 4), "Recife", "Boa Viagem", True) == ""
     # falha técnica na busca não é "negócio único"
     assert mod.observar_regiao(_pesquisa(0, None), "Recife", "", False) == ""
@@ -335,3 +335,43 @@ def test_negocio_unico_chega_nas_personas(monkeypatch):
     p = asyncio.run(Pesquisador(IAFalsa(), IAFalsa(), BuscaVazia()).executar(NEGOCIOS["barbearia"]))
     assert "negócio único" in p.observacao and p.tem_dados()
     assert "negócio único" in formatar_negocio(NEGOCIOS["barbearia"], p)
+
+
+
+# ---------- Contagem em níveis: bairro → cidade → nada ----------
+
+def test_separar_cidade():
+    assert mapa.separar_cidade("Boa Viagem, Recife - PE") == "Recife - PE"
+    assert mapa.separar_cidade("Recife - PE") == ""
+
+
+def test_niveis_de_concorrencia_na_cidade():
+    assert mapa.nivel_concorrencia(12, abrangencia="cidade") == "nenhum concorrente no bairro"
+    assert mapa.nivel_concorrencia(0, abrangencia="cidade") == "nenhum concorrente mapeado"
+
+
+def test_filtro_sem_raio_na_cidade():
+    r = [{"osm_type": "node", "osm_id": 9, "name": "Longe", "category": "shop", "type": "hairdresser", "lat": "-8.3", "lon": "-34.9"}]
+    aceitos = mapa.NOMINATIM_TIPOS["barbearia_salao"][1]
+    assert mapa.filtrar_nominatim(r, None, None, None, aceitos, por_tipo=True) == {"node9": "Longe"}
+
+
+def test_nenhuma_no_bairro_conta_na_cidade(monkeypatch):
+    async def contar(localizacao, categoria, palavras, raio):
+        return mapa.LojasEncontradas(14, ["A"], "teste", abrangencia="cidade", area="Recife"), None
+    monkeypatch.setattr(mod.mapa, "contar_lojas", contar)
+    p = asyncio.run(Pesquisador(IAFalsa(), IAFalsa(), BuscaFalsa()).executar(NEGOCIOS["barbearia"]))
+    assert p.lojas_regiao.abrangencia == "cidade" and p.lojas_regiao.area == "Recife"
+    assert p.lojas_regiao.nivel_concorrencia == "nenhum concorrente no bairro"
+    assert "único no bairro" in p.observacao and "Em Recife há pelo menos 14" in p.observacao
+    assert "na cidade (Recife) há pelo menos 14" in formatar_negocio(NEGOCIOS["barbearia"], p)
+
+
+def test_nenhuma_nem_na_cidade_nao_informa_numero(monkeypatch):
+    async def contar(localizacao, categoria, palavras, raio):
+        return mapa.LojasEncontradas(0, [], "teste", abrangencia="cidade", area="Recife"), None
+    monkeypatch.setattr(mod.mapa, "contar_lojas", contar)
+    p = asyncio.run(Pesquisador(IAFalsa(), IAFalsa(), BuscaFalsa()).executar(NEGOCIOS["barbearia"]))
+    texto = formatar_negocio(NEGOCIOS["barbearia"], p)
+    assert "Lojas do mesmo ramo" not in texto          # sem número
+    assert "em Recife" in p.observacao and "negócio único" in p.observacao

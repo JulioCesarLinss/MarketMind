@@ -72,6 +72,12 @@ def imprimir_resumo(resultado: ResultadoSimulacao) -> None:
 
 
 def imprimir_relatorio(rel: Relatorio) -> None:
+    if rel.financeiro:
+        from app.services.financeiro import formatar_financeiro
+        print("\n" + "=" * 70)
+        print("VIABILIDADE FINANCEIRA (calculada pelo código)")
+        print("=" * 70)
+        print(formatar_financeiro(rel.financeiro))
     print("\n" + "=" * 70)
     print("RELATÓRIO DO ANALISTA")
     print("=" * 70)

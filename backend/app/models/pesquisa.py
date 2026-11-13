@@ -69,6 +69,9 @@ class LojasRegiao(BaseModel):
     quantidade: int | None = Field(description="Pelo menos esta quantidade de lojas do ramo no raio (None = não foi possível contar)")
     raio_metros: int
     categoria: str
+    abrangencia: Literal["bairro", "cidade"] = Field(
+        default="bairro", description="bairro = no raio em volta do endereço; cidade = nenhuma perto, então contou na cidade inteira")
+    area: str = Field(default="", description="Nome da cidade quando abrangencia = cidade")
     nivel_concorrencia: str = Field(description="nenhum concorrente mapeado | baixa | media | alta | indeterminado")
     nomes: list[str] = Field(default_factory=list)
     fonte: str = ""

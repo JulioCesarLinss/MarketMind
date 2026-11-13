@@ -340,13 +340,21 @@ Usar "interesse simulado", "percepção dos agentes", "hipótese a validar". Nun
 
 ## 5. Calculadora financeira
 
-Funções puras em `backend/app/services/`, com testes unitários.
+Funções puras em `backend/app/services/financeiro.py` (testes em `tests/test_financeiro.py`). O resultado vai em `relatorio.financeiro` e só existe se o usuário informou os custos.
 
 ```
 receita líquida por venda   = preço × (1 − taxa de plataforma%)
-margem de contribuição      = receita líquida − custo variável
-ponto de equilíbrio         = custo fixo mensal ÷ margem   (vendas/mês, arredondado para cima)
+lucro por venda (margem)    = receita líquida − custo médio de produção
+ponto de equilíbrio         = custo fixo mensal ÷ lucro por venda   (só interno: escolhe os cenários; não é mostrado)
+lucro do mês (N clientes/dia) = N × 26 × lucro por venda − custo fixo
+tempo para se pagar         = investimento ÷ lucro do mês
+preço para o lucro esperado = custo ÷ (1 − taxa − lucro esperado)
 ```
+
+O relatório mostra: se o preço faz sentido (prejuízo / abaixo do lucro esperado / dentro do esperado), lucro por venda,
+aviso em destaque de que impostos e salários de funcionários não entram na conta, simulador "com N clientes por dia" (lucro diário, mensal e tempo para o investimento se pagar),
+tabela com cenários de prejuízo e de lucro, comparação com outros preços (o que os agentes pagariam, média e faixa premium do
+mercado) e alertas. Premissas: 1 cliente = 1 venda, 26 dias de funcionamento por mês.
 
 | Entrada | Tipo | Observação |
 |---|---|---|
@@ -354,6 +362,8 @@ ponto de equilíbrio         = custo fixo mensal ÷ margem   (vendas/mês, arred
 | `custo_variavel` | R$ | Custo por unidade vendida |
 | `custo_fixo_mensal` | R$ | Aluguel, salários, etc. |
 | `taxa_plataforma` | % (0–100) | Comissão de apps/marketplaces; 0 se não houver |
+| `lucro_esperado_pct` | % (opcional) | Quanto do preço o dono espera que vire lucro |
+| `investimento_inicial` | R$ (opcional) | Para calcular em quanto tempo o negócio se paga |
 
 O campo **taxa de plataforma (%)** foi adicionado ao formulário porque pode reduzir muito a margem de negócios que vendem por aplicativos ou marketplaces. O relatório deve listar o que **não** foi considerado (impostos, entrega, perdas, etc.). Se margem ≤ 0, exibir alerta em vez do ponto de equilíbrio.
 
@@ -444,6 +454,8 @@ Atenções:
 
 | Data | Autor | Commit | Mudança |
 |---|---|---|---|
+| 2026-11-13 | Júlio | `fix: financeiro sem equilíbrio, personas de cliente comum e lojas por bairro/cidade` | Relatório financeiro sem ponto de equilíbrio (cartão, linha e coluna), simulador sempre visível e gráfico de colunas do lucro/prejuízo do mês por clientes/dia (clicável); Exigente e Crítico sem cobrar provas ("o que foi descrito é verdade"; sem "qualidade comprovada", fotos, comprovantes, avaliações); entrega sem detalhes não vira "não entrega" e com aviso de que impostos e salários não entram na conta; regra "pense como cliente comum" (sem afirmações técnicas, ex.: micro-ondas) e Exigente sem "técnica"; analista ignora objeções técnicas; contagem de lojas em níveis (bairro → cidade inteira → não informa), com paginação do Nominatim (até 150 por termo) e até 3 palavras do nome; 7 testes novos |
+| 2026-11-13 | Júlio | `feat: relatório financeiro` | `services/financeiro.py` (sem IA): lucro por venda, se o preço faz sentido frente ao lucro esperado, ponto de equilíbrio por dia, cenários "com N clientes por dia", tempo para o investimento se pagar, comparação com o preço dos agentes e do mercado, alertas; campos opcionais `lucro_esperado_pct` e `investimento_inicial`; seção "Seu negócio se paga?" com simulador no resultado; analista comenta os números; 11 testes novos |
 | 2026-11-13 | Júlio | `feat: preço ideal, experimentos por ramo e busca na cidade do usuário` | Indicadores ganham `aceitam_preco`, `avaliacao_preco` e `preco_referencia` (se a maioria pagaria o preço cobrado, o card mostra "Preço ideal" em vez de uma média alguns centavos abaixo); personas não tiram centavos do preço máximo quando o acham justo; analista não usa amostra grátis/degustação como padrão (no máximo 1 experimento gratuito; sugestões por ramo); pesquisador busca primeiro no bairro, descarta páginas que não citam a cidade do usuário, prioriza as que citam o bairro e escreve `observacao` (ex.: possível negócio único na região); 11 testes novos |
 | 2026-11-12 | Júlio | `feat: escolha das personas no formulário` | Volta para as 5 personas originais; em vez da quantidade, o usuário escolhe QUAIS participam (cards clicáveis, mínimo 2; API `?personas=<id>` repetido); seletor do modelo de entrega com o mesmo estilo dos outros campos; ícones das personas em `personaIcones.ts` |
 | 2026-11-12 | Júlio | `feat: escolha de agentes, entrega e pesquisa mais completa` | Usuário escolhe de 2 a 8 consumidores (`?agentes=`; 3 personas novas: Conectada, de Família, Consciente); campo `entrega` (modelo, taxa, prazo, área, o que a torna confiável) no formulário e no contexto; Exigente reescrito (avalia o que é descrito, sem pedir certificado) + regra comum contra exigir certificação; pesquisador lê 8 páginas por busca e até 40 trechos por rodada, faz até 2 rodadas extras de busca quando vêm menos de 12 preços ou 5 lojas, e divide em 3 faixas a partir de 3 preços (barbearia: 5 → 12 preços); contagem de lojas pelo Nominatim por categoria (o Overpass público vive fora do ar), rodando junto com o Overpass; 9 testes novos |
