@@ -81,7 +81,7 @@ export default function ResultPage({ personas, resultado, onNovaAvaliacao }: Res
             <h1>Sua ideia foi<br /><span>vista por outros ângulos.</span></h1>
             <p>Veja o que chamou atenção, quais dúvidas apareceram e onde vale aprofundar a validação.</p>
           </div>
-          <div className="result-stamp"><span>MM</span><strong>DEBATE<br />FINALIZADO</strong><i>✳</i></div>
+          <div className="result-stamp"><span><img src="/favicon2.svg" alt="Favicon"/></span><strong>DEBATE<br />FINALIZADO</strong><i>✳</i></div>
         </section>
 
         <section className="summary-section">
