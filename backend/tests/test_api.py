@@ -102,3 +102,10 @@ def test_entrega_no_formulario(client):
     assert client.post("/simulacoes?demo=true", json=negocio).status_code == 201
     negocio["entrega"]["modelo"] = "drone"
     assert client.post("/simulacoes?demo=true", json=negocio).status_code == 422
+
+
+def test_api_nao_mostra_nem_aceita_personas_nao_aprovadas(client):
+    ids = [p["id"] for p in client.get("/personas").json()]
+    assert ids == ["economico", "exigente", "ocupado", "critico", "fiel_regiao"]
+    rota = "/simulacoes?demo=true&personas=economico&personas=conectado"
+    assert client.post(rota, json=NEGOCIOS["barbearia"]).status_code == 422

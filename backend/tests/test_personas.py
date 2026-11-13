@@ -87,3 +87,13 @@ def test_nenhuma_persona_pede_certificado():
     for p in PERSONAS.values():
         assert "certifica" not in p.prompt_sistema().split("Regras:")[0].lower()
     assert "Não exija certificados" in PERSONAS["exigente"].prompt_sistema()
+
+
+def test_so_as_5_originais_sao_usadas():
+    """As personas não aprovadas ficam guardadas no código, mas fora da simulação e da API."""
+    from app.agents.personas import PERSONAS_NAO_APROVADAS, escolher_personas
+    originais = ["economico", "exigente", "ocupado", "critico", "fiel_regiao"]
+    assert list(PERSONAS) == originais
+    assert [p.id for p in escolher_personas()] == originais
+    assert set(PERSONAS_NAO_APROVADAS) == {"conectado", "familia", "consciente"}
+    assert not set(PERSONAS_NAO_APROVADAS) & set(PERSONAS)

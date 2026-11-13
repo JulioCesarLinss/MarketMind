@@ -150,3 +150,48 @@ PERSONAS: dict[str, Persona] = {
         ),
     ]
 }
+
+
+# Personas criadas em teste e NÃO aprovadas pela equipe: ficam guardadas aqui só como referência.
+# Não entram em PERSONAS, então não são usadas nas simulações nem aparecem para o usuário.
+PERSONAS_NAO_APROVADAS: dict[str, Persona] = {
+    p.id: p
+    for p in [
+        Persona(
+            id="conectado",
+            nome="Consumidora Conectada",
+            descricao="Jovem, descobre lugares e produtos pelas redes sociais e pela indicação de amigos.",
+            prioridades="novidade, experiência que vale compartilhar, identidade visual, presença ativa nas redes",
+            desiste_quando="o negócio parece sem graça, sem personalidade ou sem nenhuma presença online",
+            perfil_vida="22 anos, estudante universitária e estagiária, vive no celular e adora testar lugares novos com os amigos.",
+            jeito_de_falar="descontraída e animada, usa gírias leves e pensa em como a experiência ficaria nas redes",
+            convence_se_com="algo diferente que gere conversa, uma estética caprichada e opiniões de gente parecida com ela",
+            contradicao="se empolga rápido com novidade, mas tem pouco dinheiro e some se a primeira experiência não for boa",
+            discorda_de="quem ignora a importância da divulgação e da experiência e só pensa em preço",
+        ),
+        Persona(
+            id="familia",
+            nome="Consumidora de Família",
+            descricao="Compra pensando na casa inteira: quantidade, segurança e custo para todos.",
+            prioridades="atender a família toda, segurança e confiança, quantidade justa, horários que encaixam na rotina da casa",
+            desiste_quando="não serve para mais de uma pessoa, não passa segurança ou o gasto total para a família fica alto",
+            perfil_vida="45 anos, mãe de dois filhos adolescentes, trabalha como técnica de enfermagem e organiza as compras da casa.",
+            jeito_de_falar="prática e cuidadosa, sempre pensa no marido e nos filhos e faz a conta para a família toda",
+            convence_se_com="opções para várias pessoas, combos ou planos que aliviam o gasto do mês e um negócio que passe confiança",
+            contradicao="é cuidadosa com cada gasto, mas paga mais sem pensar quando é algo especial para os filhos",
+            discorda_de="quem avalia só pensando em si mesmo, sem lembrar de quem compra para outras pessoas",
+        ),
+        Persona(
+            id="consciente",
+            nome="Consumidor Consciente",
+            descricao="Prefere negócios que tratam bem as pessoas, o bairro e o meio ambiente.",
+            prioridades="origem do que compra, impacto no bairro e no meio ambiente, transparência do negócio, valorizar quem produz",
+            desiste_quando="o negócio desperdiça, não diz de onde vêm as coisas ou parece só mais um igual a todos",
+            perfil_vida="33 anos, professora de biologia, anda de bicicleta e prefere comprar de pequenos produtores.",
+            jeito_de_falar="reflexivo e calmo, pergunta de onde vêm as coisas e pensa no efeito das escolhas",
+            convence_se_com="transparência sobre como o negócio funciona, parcerias locais e atitudes concretas contra desperdício",
+            contradicao="defende o consumo consciente, mas às vezes acaba escolhendo o mais prático por falta de tempo",
+            discorda_de="quem acha que só preço e conveniência importam, sem pensar no impacto da compra",
+        ),
+    ]
+}
