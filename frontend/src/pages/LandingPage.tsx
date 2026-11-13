@@ -9,21 +9,21 @@ const etapas = [
     titulo: 'Apresente sua ideia',
     descricao:
       'Informe o que pretende vender, o preço, o público que deseja alcançar e como planeja divulgar seu negócio.',
-    icone: '✳',
+    icone: 'ideia.svg',
   },
   {
     numero: '02',
     titulo: 'Acompanhe as perspectivas',
     descricao:
       'Diferentes perfis de consumidores avaliam sua oferta individualmente e depois debatem suas opiniões.',
-    icone: '◉',
+    icone: 'perspectiva.svg',
   },
   {
     numero: '03',
     titulo: 'Explore os resultados',
     descricao:
       'Receba um panorama com interesses, intenções de compra, objeções e sugestões do que merece ser validado.',
-    icone: '↗',
+    icone: '/grafico.svg'
   },
 ]
 
@@ -196,7 +196,7 @@ export default function LandingPage({ onComecar }: LandingPageProps) {
               </p>
 
               <div className="landing-proposal-highlight">
-                <span>✳</span>
+                <span><img src="/exclamacao.svg" alt="" /></span>
                 <p>
                   É nesse cenário que surge o MarketMind: uma ferramenta
                   para explorar diferentes perspectivas sobre uma ideia
@@ -233,7 +233,9 @@ export default function LandingPage({ onComecar }: LandingPageProps) {
               <article className="landing-step" key={etapa.numero}>
                 <div className="landing-step-top">
                   <span>{etapa.numero}</span>
-                  <div>{etapa.icone}</div>
+                  <div>
+                    <img src={etapa.icone} alt="" />
+                  </div>
                 </div>
 
                 <h3>{etapa.titulo}</h3>

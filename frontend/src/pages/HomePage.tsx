@@ -355,7 +355,7 @@ export default function HomePage({ personas, carregando, erro, aoAvaliar }: Home
               </button>
             </div>
             {erro && <div className="form-error" role="alert">{erro}</div>}
-            <p className="disclaimer">As opiniões são sintéticas e representam hipóteses para validação, não uma previsão de vendas.</p>
+            <p className="disclaimer">As opiniões são sintéticas e representam hipóteses para validação, ajudando a guiar decisões de negócios.</p>
           </form>
         </section>
       </main>
